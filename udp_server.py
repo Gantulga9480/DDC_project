@@ -21,7 +21,6 @@ prev = 0
 
 while(True):
     bytesAddressPair = UDPServerSocket.recv(bufferSize)
-    UDPServerSocket.sendto
     message = bytesAddressPair
     # address = bytesAddressPair[1]
     msg = message.hex()

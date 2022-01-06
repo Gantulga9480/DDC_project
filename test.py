@@ -15,9 +15,8 @@ def twosComplement_hex(hexval):
 
 def udp(i):
     ax.cla()
-    bytesAddressPair = UDPServerSocket.recvfrom(bufferSize)
-    message = bytesAddressPair[0]
-    address = bytesAddressPair[1]
+    bytesAddressPair = UDPServerSocket.recv(bufferSize)
+    message = bytesAddressPair
     msg = message.hex()
     data = [twosComplement_hex(msg[i+2:i+4] + msg[i:i+2]) for i in range(16, len(msg)-16, 4)]
 
