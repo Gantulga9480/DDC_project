@@ -155,7 +155,8 @@ class DDC(Tk):
                                     command=self.graph_btn_command)
 
         self.graph_nav_frame = ttk.Frame(self)
-        self.graph_nav_l = ttk.Label(self.graph_nav_frame, text='Set interval (max = 250)')
+        self.graph_nav_l = ttk.Label(self.graph_nav_frame, text='Set interval '
+                                                                '(max = 250)')
         self.graph_nav_e = ttk.Entry(self.graph_nav_frame, width=10)
         self.graph_nav_e.bind('<Return>', self.graph_nav_btn_command)
 
@@ -169,7 +170,7 @@ class DDC(Tk):
 
         self.canvas.get_tk_widget().grid(row=1, column=4,
                                          rowspan=14, columnspan=3)
-        self.graph_nav_frame.grid(row=15,column=4)
+        self.graph_nav_frame.grid(row=15, column=4)
         self.graph_nav_l.grid(row=0, column=0, sticky=NS)
         self.graph_nav_e.grid(row=0, column=1, sticky=NS)
         self.graph_btn.grid(row=15, column=5, sticky=NS)
@@ -267,27 +268,41 @@ class DDC(Tk):
             self.graph.cla()
             msg = self.udp_receive(self.BUFFER_SIZE)
             if msg:
-                i_data = [self.hex2int(msg[i+2:i+4] + msg[i:i+2]) for i in range(8, len(msg)-(self.graph_erase_len*4+8), 8)]
-                q_data = [self.hex2int(msg[i+2:i+4] + msg[i:i+2]) for i in range(12, len(msg)-(self.graph_erase_len*4+8), 8)]
+                i_data = [self.hex2int(msg[i+2:i+4] + msg[i:i+2])
+                          for i in
+                          range(8, len(msg)-(self.graph_erase_len*4+8), 8)]
+                q_data = [self.hex2int(msg[i+2:i+4] + msg[i:i+2])
+                          for i in
+                          range(12, len(msg)-(self.graph_erase_len*4+8), 8)]
                 if len(i_data) > 0:
                     if self.is_fft:
                         i_fft = np.fft.rfft(np.array(i_data))
                         q_fft = np.fft.rfft(np.array(q_data))
-                        I_fft = np.square(np.abs(i_fft))
-                        Q_fft = np.square(np.abs(q_fft))
+                        I_fft = np.abs(i_fft/len(i_data))
+                        Q_fft = np.abs(q_fft/len(q_data))
                         imax_f = np.argmax(I_fft)
                         qmax_f = np.argmax(Q_fft)
                         I_f = np.linspace(0, self.fsamp/2, len(I_fft))
                         Q_f = np.linspace(0, self.fsamp/2, len(Q_fft))
                         max_val = max(I_fft[imax_f], Q_fft[qmax_f])
-                        self.graph.annotate(f'I {int(np.round((self.fsamp/2)/len(I_f)*imax_f))} Hz', xy=(imax_f, max_val), xytext=(np.max(I_f)//10*6, max_val))
-                        self.graph.annotate(f'Q {int(np.round((self.fsamp/2)/len(Q_f)*qmax_f))} Hz', xy=(qmax_f, max_val), xytext=(np.max(I_f)//10*8, max_val))
+                        fi = int(np.round((self.fsamp/2)/len(I_f)*imax_f))
+                        fq = int(np.round((self.fsamp/2)/len(Q_f)*qmax_f))
+                        self.graph.annotate(f'I {fi} Hz',
+                                            xy=(imax_f, max_val),
+                                            xytext=(np.max(I_f)//10*6,
+                                                    max_val))
+                        self.graph.annotate(f'Q {fq} Hz',
+                                            xy=(qmax_f, max_val),
+                                            xytext=(np.max(I_f)//10*8,
+                                                    max_val))
                         self.graph.plot(I_f, I_fft, 'r')
                         self.graph.plot(Q_f, Q_fft)
                         self.graph.legend(['I', 'Q'], loc='lower right')
                     else:
                         self.graph.plot(i_data, 'r')
                         self.graph.plot(q_data)
+                        plt.ylim(bottom=-35000)
+                        plt.ylim(top=35000)
                         self.graph.legend(['I', 'Q'], loc='upper right')
                     if self.no_data_warn:
                         self.no_data_warn = False
@@ -546,7 +561,7 @@ class DDC(Tk):
         except ValueError:
             self.throw_warning('Wrong input. Please insert '
                                'number between 5 to 250!')
-            return
+            val = 500
         if val > 500:
             self.throw_warning('The input value exceeds maximum sample count!')
             self.graph_erase_len = 0

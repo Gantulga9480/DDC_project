@@ -21,6 +21,8 @@ while(True):
         msg = message.hex()
         try:
             header = int(msg[1:2])
+            print()
+            print(msg[8:2008])
             # print(header)
         except Exception:
             quit()
