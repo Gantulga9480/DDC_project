@@ -1,22 +1,14 @@
 import socket
 from low_level_delay import delay
 
-serverAddressPort = ("10.3.4.123", 8)
+serverAddressPort = ("10.3.4.28", 10)
 UDPClientSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
-print('udp server ok')
-bufferSize = 10
-msgFromClient = ''
-for i in range(bufferSize):
-    msgFromClient += 'B'
+print('UDP Socket UP and sending')
 
-# UDPClientSocket.sendto(bytesToSend, serverAddressPort)
-index = 1
-# while True:
-ind = str(index)
-msg = msgFromClient.replace('B', ind, 1)
-bytesToSend = str.encode(msg)
-UDPClientSocket.sendto(bytesToSend, serverAddressPort)
-index += 1
-if index == 9:
-    index = 1
-# delay(2.5)
+while 1:
+    UDPClientSocket.sendto(str.encode('S1010101010'), serverAddressPort)
+    delay(100)
+    UDPClientSocket.sendto(str.encode('S0101010101'), serverAddressPort)
+    delay(100)
+    UDPClientSocket.sendto(str.encode('L'), serverAddressPort)
+    delay(100)

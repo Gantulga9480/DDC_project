@@ -48,6 +48,7 @@ class DDC(Tk):
 
         self.UDP_server_soc = None
 
+        self.title('DDC Utility')
         self.resizable(False, False)
 
         self.d300l = ttk.Label(self, text='DDC MODE            ')
@@ -93,10 +94,15 @@ class DDC(Tk):
         self.ddcClock_l = ttk.Label(self, text='DDC Fc (MHz)')
         self.ddcClock_e = ttk.Entry(self, width=25)
         self.ddcClock_e.insert(END, '30')
+        self.config(bg="#FFFFFF")
 
         self.ip_frame = ttk.Frame(self)
+        self.ip_style = ttk.Style(self.ip_frame)
+        self.ip_style.configure('TFrame', background='white')
 
         self.pcip_l = ttk.Label(self.ip_frame, text='PC  IP:PORT   ')
+        self.pcip_style = ttk.Style(self.pcip_l)
+        self.pcip_style.configure('TLabel', background='white')
         self.ddcip_l = ttk.Label(self.ip_frame,
                                  text='DDC IP:PORT               ')
 
@@ -120,6 +126,8 @@ class DDC(Tk):
 
         self.d305_expinv_c = ttk.Checkbutton(self.opt_frame,
                                              variable=self.d305_expinv_var)
+        self.d305_expinv_style = ttk.Style(self.d305_expinv_c)
+        self.d305_expinv_style.configure('TCheckbutton', background='white')
         self.d309_uBmode_c = ttk.Checkbutton(self.opt_frame,
                                              variable=self.d309_uBmode_var)
 
@@ -129,22 +137,27 @@ class DDC(Tk):
 
         self.con_btn = ttk.Button(self.btn_frame, text="Connect",
                                   command=self.connect_ddc)
-        self.send_btn = ttk.Button(self.btn_frame, text="Send",
+        self.con_btn_style = ttk.Style(self.con_btn)
+        self.con_btn_style.configure('TButton', background='white')
+        self.send_btn = ttk.Button(self.btn_frame, text="Write",
                                    command=self.send_btn_command,
                                    state=DISABLED)
-        self.graph_btn = ttk.Button(self.btn_frame, text="FFT",
-                                    command=self.graph_btn_command)
+        self.read_btn = ttk.Button(self.btn_frame, text="Read",
+                                   command=self.read_btn_command,
+                                   state=DISABLED)
 
         self.fig = plt.figure()
         self.graph = plt.subplot()
 
         self.canvas = FigureCanvasTkAgg(self.fig, master=self)
         self.canvas.draw()
+        self.graph_btn = ttk.Button(self, text="FFT",
+                                    command=self.graph_btn_command)
 
-        self.graph_nav_l = ttk.Label(self, text='Set interval (max = 500)')
-        self.graph_nav_e = ttk.Entry(self)
-        self.graph_nav_btn = ttk.Button(self, text="Set",
-                                        command=self.graph_nav_btn_command)
+        self.graph_nav_frame = ttk.Frame(self)
+        self.graph_nav_l = ttk.Label(self.graph_nav_frame, text='Set interval (max = 250)')
+        self.graph_nav_e = ttk.Entry(self.graph_nav_frame, width=10)
+        self.graph_nav_e.bind('<Return>', self.graph_nav_btn_command)
 
         self.opt_frame.grid(row=0, column=4, columnspan=3)
         self.d305_expoff_l.grid(row=0, column=0, padx=1)
@@ -156,9 +169,10 @@ class DDC(Tk):
 
         self.canvas.get_tk_widget().grid(row=1, column=4,
                                          rowspan=14, columnspan=3)
-        self.graph_nav_l.grid(row=15, column=4, sticky=NS)
-        self.graph_nav_e.grid(row=15, column=5, sticky=NSEW)
-        self.graph_nav_btn.grid(row=15, column=6, sticky=NS)
+        self.graph_nav_frame.grid(row=15,column=4)
+        self.graph_nav_l.grid(row=0, column=0, sticky=NS)
+        self.graph_nav_e.grid(row=0, column=1, sticky=NS)
+        self.graph_btn.grid(row=15, column=5, sticky=NS)
 
         self.d300l.grid(row=0, column=0, sticky=W)
         self.d300m.grid(row=0, column=1)
@@ -200,8 +214,8 @@ class DDC(Tk):
 
         self.btn_frame.grid(row=15, column=0, columnspan=2)
         self.con_btn.grid(row=0, column=0, padx=3)
-        self.send_btn.grid(row=0, column=1, padx=3)
-        self.graph_btn.grid(row=0, column=2, padx=3)
+        self.send_btn.grid(row=0, column=2, padx=3)
+        self.read_btn.grid(row=0, column=1, padx=3)
 
         try:
             with open('conf.json', 'r') as file:
@@ -220,19 +234,19 @@ class DDC(Tk):
         except FileNotFoundError:
             with open('conf.json', 'w') as file:
                 json.dump(REGS_DEFAULT, file)
-            self.d302e.insert(END, str(D302_DCT['DEFAULT']))
-            self.d303e.insert(END, str(D303_DCT['DEFAULT']))
-            self.d304e.insert(END, str(D304_DCT['DEFAULT']))
-            self.d305e.insert(END, str(D305_DCT['DEFAULT']))
-            self.d306e.insert(END, str(D306_DCT['DEFAULT']+1))
-            self.d307e.insert(END, str(D307_DCT['DEFAULT']))
-            self.d308e.insert(END, str(D308_DCT['DEFAULT']+1))
-            self.d309e.insert(END, str(D309_DCT['DEFAULT']))
-            self.d30Ae.insert(END, str(D30A_DCT['DEFAULT']+1))
-            self.d30Be.insert(END, str(D30B_DCT['DEFAULT']))
-            self.d30Ce.insert(END, str(D30C_DCT['DEFAULT']+1))
+            self.d302e.insert(END, str(REGS_DEFAULT['302']))
+            self.d303e.insert(END, str(REGS_DEFAULT['303']))
+            self.d304e.insert(END, str(REGS_DEFAULT['304']))
+            self.d305e.insert(END, str(REGS_DEFAULT['305']))
+            self.d306e.insert(END, str(REGS_DEFAULT['306']+1))
+            self.d307e.insert(END, str(REGS_DEFAULT['307']))
+            self.d308e.insert(END, str(REGS_DEFAULT['308']+1))
+            self.d309e.insert(END, str(REGS_DEFAULT['309']))
+            self.d30Ae.insert(END, str(REGS_DEFAULT['30A']+1))
+            self.d30Be.insert(END, str(REGS_DEFAULT['30B']))
+            self.d30Ce.insert(END, str(REGS_DEFAULT['30C']+1))
 
-        self.total_decimation = 16384
+        self.total_decimation = 1
         self.total_decimation = int(self.d306e.get()) * int(self.d308e.get()) \
             * int(self.d30Ae.get())
 
@@ -249,36 +263,53 @@ class DDC(Tk):
         self.mainloop()
 
     def draw_ddc(self):
-        data = []
         if self.is_con and self.is_graph:
             self.graph.cla()
-            ready, _, _ = select.select([self.UDP_server_soc], [], [], 0.05)
-            if ready:
-                byteData = self.UDP_server_soc.recv(self.BUFFER_SIZE)
-                msg = byteData.hex()
-                data = [self.hex2int(msg[i+2:i+4] + msg[i:i+2]) for i in range(16, len(msg)-(self.graph_erase_len*4+16), 4)]
-                header = int(msg[1:2])
-                fourier_transform = np.fft.rfft(np.array(data))
-                abs_fourier_transform = np.abs(fourier_transform)
-                power_spectrum = np.square(abs_fourier_transform)
-                max_f = np.argmax(power_spectrum)
-                max_val = power_spectrum[max_f]
-                max_data = max(data)
-                frequency = np.linspace(0, self.fsamp/2, len(power_spectrum))
-                if self.is_fft:
-                    self.graph.annotate(f'{np.round((self.fsamp/2)/len(frequency)*max_f)} Hz', xy=(max_f, max_val), xytext=(np.max(frequency)//10*8, max_val))
-                    self.graph.plot(frequency, power_spectrum)
-                else:
-                    self.graph.plot(data)
-                if self.no_data_warn:
-                    self.no_data_warn = False
+            msg = self.udp_receive(self.BUFFER_SIZE)
+            if msg:
+                i_data = [self.hex2int(msg[i+2:i+4] + msg[i:i+2]) for i in range(8, len(msg)-(self.graph_erase_len*4+8), 8)]
+                q_data = [self.hex2int(msg[i+2:i+4] + msg[i:i+2]) for i in range(12, len(msg)-(self.graph_erase_len*4+8), 8)]
+                if len(i_data) > 0:
+                    if self.is_fft:
+                        i_fft = np.fft.rfft(np.array(i_data))
+                        q_fft = np.fft.rfft(np.array(q_data))
+                        I_fft = np.square(np.abs(i_fft))
+                        Q_fft = np.square(np.abs(q_fft))
+                        imax_f = np.argmax(I_fft)
+                        qmax_f = np.argmax(Q_fft)
+                        I_f = np.linspace(0, self.fsamp/2, len(I_fft))
+                        Q_f = np.linspace(0, self.fsamp/2, len(Q_fft))
+                        max_val = max(I_fft[imax_f], Q_fft[qmax_f])
+                        self.graph.annotate(f'I {int(np.round((self.fsamp/2)/len(I_f)*imax_f))} Hz', xy=(imax_f, max_val), xytext=(np.max(I_f)//10*6, max_val))
+                        self.graph.annotate(f'Q {int(np.round((self.fsamp/2)/len(Q_f)*qmax_f))} Hz', xy=(qmax_f, max_val), xytext=(np.max(I_f)//10*8, max_val))
+                        self.graph.plot(I_f, I_fft, 'r')
+                        self.graph.plot(Q_f, Q_fft)
+                        self.graph.legend(['I', 'Q'], loc='lower right')
+                    else:
+                        self.graph.plot(i_data, 'r')
+                        self.graph.plot(q_data)
+                        self.graph.legend(['I', 'Q'], loc='upper right')
+                    if self.no_data_warn:
+                        self.no_data_warn = False
             else:
                 if not self.no_data_warn:
                     self.throw_warning('No data available at socket!')
                     self.no_data_warn = True
-                # self.connect_ddc()
         self.canvas.draw()
         self.after(int(500000/(self.fsamp)), self.draw_ddc)
+
+    def read_btn_command(self) -> None:
+        """ Depricated """
+        cmd = 'READ_DDC'
+        res = None
+        self.udp_send('L'.encode())
+        self.udp_send(cmd.encode())
+        # while True:
+        #     res = self.udp_receive(150)
+        #     if res[0:2] == '52':
+        #         break
+        # TODO handle res
+        self.udp_send('L'.encode())
 
     def send_btn_command(self) -> None:
         try:
@@ -303,15 +334,16 @@ class DDC(Tk):
         self.fsamp = self.fclock // self.total_decimation
 
         if self.fclock > 30 * 10**6:
-            messagebox.showwarning('Warning', 'DDC Fc is too high. DMA under run may occure!')
+            messagebox.showwarning('Warning', 'DDC Fc is too high. DMA '
+                                              'under run may occure!')
         if self.total_decimation < 4:
-            messagebox.showwarning('Warning', 'Total Decimation is too low. DDC may not work!')
+            messagebox.showwarning('Warning', 'Total Decimation is too low. '
+                                              'DDC may not work!')
 
         data_to_send = ''
         for i, item in enumerate(conf):
             ind = f'{i}'.zfill(2)
             data_to_send += (f'A{ind}B' + str(item).zfill(12))
-            print(item)
         self.is_graph = False
         self.udp_send('L'.encode())
         self.udp_send(data_to_send.encode())
@@ -475,6 +507,10 @@ class DDC(Tk):
                 self.con_btn['text'] = 'Disconnect'
                 self.send_btn['state'] = ACTIVE
                 self.is_con = True
+            except OSError as e:
+                if str(e).split(' ')[1] == '10048]':
+                    messagebox.showerror('Error', 'Can\'t listen on port '
+                                         f'{self.pcport_e.get()}')
             except Exception:
                 messagebox.showerror('Error', 'Please insert valid IP/PORT')
         else:
@@ -494,20 +530,22 @@ class DDC(Tk):
                 self.UDP_server_soc.sendto(data, (self.ddcip_e.get(),
                                                   int(self.ddcport_e.get())))
             except Exception:
-                messagebox.showerror('Error', 'Please insert valid IP/PORT')
+                # TODO
+                messagebox.showerror('Error', 'UDP SEND ERROR!')
 
-    def udp_receive(self):
+    def udp_receive(self, size):
         if self.is_con:
-            bytesAddressPair = self.UDP_server_soc.recv(self.BUFFER_SIZE)
-            return bytesAddressPair.hex()
-        return
+            ready, _, _ = select.select([self.UDP_server_soc], [], [], 0.05)
+            if ready:
+                bytesAddressPair = self.UDP_server_soc.recv(size)
+                return bytesAddressPair.hex()
 
-    def graph_nav_btn_command(self):
+    def graph_nav_btn_command(self, event):
         try:
-            val = int(self.graph_nav_e.get())
+            val = int(self.graph_nav_e.get()) * 2
         except ValueError:
             self.throw_warning('Wrong input. Please insert '
-                               'number between 5 to 500!')
+                               'number between 5 to 250!')
             return
         if val > 500:
             self.throw_warning('The input value exceeds maximum sample count!')

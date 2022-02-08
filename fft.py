@@ -19,14 +19,14 @@ sampling_rate = 39060
 
 datas = []
 
-with open('data.csv', newline='') as csvfile:
-    spamreader = csv.reader(csvfile, delimiter=' ')
-    for row in spamreader:
-        for i in range(0, len(row), 2):
-            item = row[i+1] + row[i]
-            num = twosComplement_hex(item)
-            # print(num)
-            datas.append(num)
+# with open('data.csv', newline='') as csvfile:
+#     spamreader = csv.reader(csvfile, delimiter=' ')
+#     for row in spamreader:
+#         for i in range(0, len(row), 2):
+#             item = row[i+1] + row[i]
+#             num = twosComplement_hex(item)
+#             # print(num)
+#             datas.append(num)
 
 fourier_transform = np.fft.rfft(np.array(datas))
 
