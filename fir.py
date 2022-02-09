@@ -1,20 +1,18 @@
 import csv
 
+SCALE = 1000
+ORDER = 100
 
 coef = []
 
-with open('coef128_3k_1.25Mhz.csv', newline='') as file:
+with open('fir_coef.csv', newline='') as file:
     spamreader = csv.reader(file, delimiter=' ')
     for row in spamreader:
-        coef.append(round(float(row[0]) * 1000))
-        # print(round(float(row[0]) * 10))
+        coef.append(round(float(row[0])) * SCALE)
 
-
-out = ''
-
+out = '    '
 for item in coef:
     out += str(item) + ', '
-
-print('int16_t coef[128] = {')
+print(f'int16_t coef[{ORDER}] = {{')
 print(out)
 print('};')
