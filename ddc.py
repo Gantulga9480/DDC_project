@@ -44,7 +44,7 @@ class DDC(Tk):
         self.d301_var = StringVar(self)
         self.d305_expinv_var = BooleanVar(self)
         self.d309_uBmode_var = BooleanVar(self)
-        self.surpass_warning = BooleanVar(self, value=False)
+        self.dfir_var = BooleanVar(self, value=False)
 
         self.UDP_server_soc = None
 
@@ -64,6 +64,7 @@ class DDC(Tk):
         self.d30Al = ttk.Label(self, text='RCF DECIMATION  (-1)')
         self.d30Bl = ttk.Label(self, text='RCF ADDRESS OFFSET  ')
         self.d30Cl = ttk.Label(self, text='RCF FILTER TAPS (-1)')
+        self.dfirl = ttk.Label(self, text='ENABLE RCF FIR      ')
 
         self.d300m = ttk.Combobox(self,
                                   value=D300_OPT,
@@ -90,6 +91,8 @@ class DDC(Tk):
         self.d30Ae = ttk.Entry(self, width=25)
         self.d30Be = ttk.Entry(self, width=25)
         self.d30Ce = ttk.Entry(self, width=25)
+
+        self.dfirc = ttk.Checkbutton(self, variable=self.dfir_var)
 
         self.ddcClock_l = ttk.Label(self, text='DDC Fc (MHz)')
         self.ddcClock_e = ttk.Entry(self, width=25)
@@ -155,10 +158,14 @@ class DDC(Tk):
                                     command=self.graph_btn_command)
 
         self.graph_nav_frame = ttk.Frame(self)
-        self.graph_nav_l = ttk.Label(self.graph_nav_frame, text='Set interval '
-                                                                '(max = 250)')
-        self.graph_nav_e = ttk.Entry(self.graph_nav_frame, width=10)
-        self.graph_nav_e.bind('<Return>', self.graph_nav_btn_command)
+        self.graph_nav_x_l = ttk.Label(self.graph_nav_frame,
+                                       text='Set interval (max = 250)')
+        self.graph_nav_x_e = ttk.Entry(self.graph_nav_frame, width=10)
+        self.graph_nav_x_e.bind('<Return>', self.graph_nav_x_btn_command)
+        self.graph_nav_y_l = ttk.Label(self.graph_nav_frame,
+                                       text='Set scale (max = 35000)')
+        self.graph_nav_y_e = ttk.Entry(self.graph_nav_frame, width=10)
+        self.graph_nav_y_e.bind('<Return>', self.graph_nav_y_btn_command)
 
         self.opt_frame.grid(row=0, column=4, columnspan=3)
         self.d305_expoff_l.grid(row=0, column=0, padx=1)
@@ -169,11 +176,13 @@ class DDC(Tk):
         self.d309_uBmode_c.grid(row=0, column=5, padx=10)
 
         self.canvas.get_tk_widget().grid(row=1, column=4,
-                                         rowspan=14, columnspan=3)
-        self.graph_nav_frame.grid(row=15, column=4)
-        self.graph_nav_l.grid(row=0, column=0, sticky=NS)
-        self.graph_nav_e.grid(row=0, column=1, sticky=NS)
-        self.graph_btn.grid(row=15, column=5, sticky=NS)
+                                         rowspan=15, columnspan=3)
+        self.graph_nav_frame.grid(row=16, column=4)
+        self.graph_nav_x_l.grid(row=0, column=0, sticky=NS)
+        self.graph_nav_x_e.grid(row=0, column=1, sticky=NS)
+        self.graph_nav_y_l.grid(row=0, column=2, sticky=NS)
+        self.graph_nav_y_e.grid(row=0, column=3, sticky=NS)
+        self.graph_btn.grid(row=16, column=5, sticky=NS)
 
         self.d300l.grid(row=0, column=0, sticky=W)
         self.d300m.grid(row=0, column=1)
@@ -201,11 +210,13 @@ class DDC(Tk):
         self.d30Be.grid(row=11, column=1)
         self.d30Cl.grid(row=12, column=0, sticky=W)
         self.d30Ce.grid(row=12, column=1)
+        self.dfirl.grid(row=13, column=0, sticky=W)
+        self.dfirc.grid(row=13, column=1)
 
-        self.ddcClock_l.grid(row=13, column=0)
-        self.ddcClock_e.grid(row=13, column=1)
+        self.ddcClock_l.grid(row=14, column=0)
+        self.ddcClock_e.grid(row=14, column=1)
 
-        self.ip_frame.grid(row=14, column=0, columnspan=2, sticky=EW)
+        self.ip_frame.grid(row=15, column=0, columnspan=2, sticky=EW)
         self.pcip_l.grid(row=0, column=0, sticky=W)
         self.pcip_m.grid(row=0, column=1)
         self.pcport_e.grid(row=0, column=2)
@@ -213,7 +224,7 @@ class DDC(Tk):
         self.ddcip_e.grid(row=1, column=1)
         self.ddcport_e.grid(row=1, column=2)
 
-        self.btn_frame.grid(row=15, column=0, columnspan=2)
+        self.btn_frame.grid(row=16, column=0, columnspan=2)
         self.con_btn.grid(row=0, column=0, padx=3)
         self.send_btn.grid(row=0, column=2, padx=3)
         self.read_btn.grid(row=0, column=1, padx=3)
@@ -258,7 +269,8 @@ class DDC(Tk):
         self.is_fft = False
         self.is_graph = True
 
-        self.graph_erase_len = 0
+        self.graph_len = 250
+        self.graph_scale = 35000
 
         self.draw_ddc()
         self.mainloop()
@@ -270,10 +282,10 @@ class DDC(Tk):
             if msg:
                 i_data = [self.hex2int(msg[i+2:i+4] + msg[i:i+2])
                           for i in
-                          range(8, len(msg)-(self.graph_erase_len*4+8), 8)]
+                          range(8, len(msg)-8, 8)]
                 q_data = [self.hex2int(msg[i+2:i+4] + msg[i:i+2])
                           for i in
-                          range(12, len(msg)-(self.graph_erase_len*4+8), 8)]
+                          range(12, len(msg)-8, 8)]
                 if len(i_data) > 0:
                     if self.is_fft:
                         i_fft = np.fft.rfft(np.array(i_data))
@@ -301,8 +313,8 @@ class DDC(Tk):
                     else:
                         self.graph.plot(i_data, 'r')
                         self.graph.plot(q_data)
-                        plt.ylim(bottom=-35000)
-                        plt.ylim(top=35000)
+                        plt.ylim(-self.graph_scale, self.graph_scale)
+                        plt.xlim(0, self.graph_len)
                         self.graph.legend(['I', 'Q'], loc='upper right')
                     if self.no_data_warn:
                         self.no_data_warn = False
@@ -341,7 +353,8 @@ class DDC(Tk):
                     self.checkInput(self.d309e.get(), '309'),
                     self.checkInput(self.d30Ae.get(), '30A'),
                     self.checkInput(self.d30Be.get(), '30B'),
-                    self.checkInput(self.d30Ce.get(), '30C')]
+                    self.checkInput(self.d30Ce.get(), '30C'),
+                    self.checkInput(str(self.dfir_var.get()), 'FIR')]
         except ValueError as e:
             messagebox.showerror('Error', 'Wrong input!')
             return
@@ -349,12 +362,11 @@ class DDC(Tk):
         self.fsamp = self.fclock // self.total_decimation
 
         if self.fclock > 30 * 10**6:
-            messagebox.showwarning('Warning', 'DDC Fc is too high. DMA '
-                                              'under run may occure!')
+            self.throw_warning('Warning', 'DDC Fc is too high. DMA '
+                               'under run may occure!')
         if self.total_decimation < 4:
-            messagebox.showwarning('Warning', 'Total Decimation is too low. '
-                                              'DDC may not work!')
-
+            self.throw_warning('Warning', 'Total Decimation is too low. '
+                               'DMA may not work!')
         data_to_send = ''
         for i, item in enumerate(conf):
             ind = f'{i}'.zfill(2)
@@ -364,19 +376,17 @@ class DDC(Tk):
         self.udp_send(data_to_send.encode())
         self.udp_send('L'.encode())
         self.is_graph = True
-        conf.pop(0)
-        conf.pop(0)
-        self.REGS_LAST['302'] = conf[0]
+        self.REGS_LAST['302'] = conf[2]
         self.REGS_LAST['303'] = int(self.d303e.get())
-        self.REGS_LAST['304'] = conf[2]
-        self.REGS_LAST['305'] = conf[3]
-        self.REGS_LAST['306'] = conf[4]
-        self.REGS_LAST['307'] = conf[5]
-        self.REGS_LAST['308'] = conf[6]
-        self.REGS_LAST['309'] = conf[7]
-        self.REGS_LAST['30A'] = conf[8]
-        self.REGS_LAST['30B'] = conf[9]
-        self.REGS_LAST['30C'] = conf[10]
+        self.REGS_LAST['304'] = conf[4]
+        self.REGS_LAST['305'] = conf[5]
+        self.REGS_LAST['306'] = conf[6]
+        self.REGS_LAST['307'] = conf[7]
+        self.REGS_LAST['308'] = conf[8]
+        self.REGS_LAST['309'] = conf[9]
+        self.REGS_LAST['30A'] = conf[10]
+        self.REGS_LAST['30B'] = conf[11]
+        self.REGS_LAST['30C'] = conf[12]
         with open('conf.json', 'w') as file:
             json.dump(self.REGS_LAST, file)
 
@@ -507,10 +517,14 @@ class DDC(Tk):
             if REGS_MIN[reg] <= val <= REGS_MAX[reg]:
                 return val
             else:
-                self.throw_warning('Please check Decimation rates. '
-                                   'RCF FILRER Taps using default '
+                self.throw_warning('RCF FILRER Taps using default '
                                    f'value of {REGS_DEFAULT[reg]}')
                 return REGS_DEFAULT[reg]
+        elif reg == 'FIR':
+            if inpt == 'True':
+                return 1
+            else:
+                return 0
 
     def connect_ddc(self) -> None:
         if not self.is_con:
@@ -555,22 +569,33 @@ class DDC(Tk):
                 bytesAddressPair = self.UDP_server_soc.recv(size)
                 return bytesAddressPair.hex()
 
-    def graph_nav_btn_command(self, event):
+    def graph_nav_x_btn_command(self, _):
         try:
-            val = int(self.graph_nav_e.get()) * 2
+            val = int(self.graph_nav_x_e.get())
         except ValueError:
-            self.throw_warning('Wrong input. Please insert '
-                               'number between 5 to 250!')
-            val = 500
-        if val > 500:
-            self.throw_warning('The input value exceeds maximum sample count!')
-            self.graph_erase_len = 0
-            return
+            self.bell()
+            val = 250
+        if val > 250:
+            self.bell()
+            val = 250
         elif val < 5:
-            self.throw_warning('The input value shouldn\'t be lower than 5!')
-            self.graph_erase_len = 0
-            return
-        self.graph_erase_len = 500 - val
+            self.bell()
+            val = 5
+        self.graph_len = val
+
+    def graph_nav_y_btn_command(self, _):
+        try:
+            val = int(self.graph_nav_y_e.get())
+        except ValueError:
+            self.bell()
+            val = 35000
+        if val > 35000:
+            self.bell()
+            val = 35000
+        elif val < 10:
+            self.bell()
+            val = 10
+        self.graph_scale = val
 
     def graph_btn_command(self):
         self.is_fft = not self.is_fft
@@ -580,8 +605,7 @@ class DDC(Tk):
             self.graph_btn['text'] = 'FFT'
 
     def throw_warning(self, msg):
-        if not self.surpass_warning.get():
-            messagebox.showwarning('Warning', msg)
+        messagebox.showwarning('Warning', msg)
 
     @staticmethod
     def hex2int(hexval):
