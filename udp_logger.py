@@ -10,8 +10,8 @@ parser.add_argument('ip', type=str, help='PC static IP')
 parser.add_argument('port', type=int, help='PC receive PORT')
 parser.add_argument('--show', action='store_const', const=True)
 parser.add_argument('--silent', action='store_const', const=True)
-parser.add_argument('--files', action='store')
-parser.add_argument('--rows', action='store')
+parser.add_argument('--files', action='store', type=int)
+parser.add_argument('--rows', action='store', type=int)
 args = parser.parse_args()
 
 UDPServerSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
@@ -67,7 +67,7 @@ if not args.show:
             with open(f'DDC_DATA/Data_{i+1}.csv', "w+", newline='') as _file:
                 writer = csv.writer(_file)
                 packet_count = 0
-                print(f'FILES CREATED {i+1}')
+                print(f'FILE {i+1}')
                 while packet_count < P_MOD_PACKET_COUNT:
                     packet_count += 1
                     try:

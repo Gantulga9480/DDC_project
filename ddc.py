@@ -229,6 +229,10 @@ class DDC(Tk):
         self.send_btn.grid(row=0, column=2, padx=3)
         self.read_btn.grid(row=0, column=1, padx=3)
 
+        self.pcport_e.insert(END, '10')
+        self.ddcip_e.insert(END, '10.3.4.123')
+        self.ddcport_e.insert(END, '11')
+
         try:
             with open('conf.json', 'r') as file:
                 self.REGS_LAST = json.load(file)
@@ -271,6 +275,7 @@ class DDC(Tk):
 
         self.graph_len = 250
         self.graph_scale = 35000
+        self.fft_last_scale = 5000
 
         self.draw_ddc()
         self.mainloop()
@@ -297,20 +302,43 @@ class DDC(Tk):
                         I_f = np.linspace(0, self.fsamp/2, len(I_fft))
                         Q_f = np.linspace(0, self.fsamp/2, len(Q_fft))
                         max_val = max(I_fft[imax_f], Q_fft[qmax_f])
-                        fi = int(np.round((self.fsamp/2)/len(I_f)*imax_f))
-                        fq = int(np.round((self.fsamp/2)/len(Q_f)*qmax_f))
-                        self.graph.annotate(f'I {fi} Hz',
-                                            xy=(imax_f, max_val),
+                        fi = round(np.round((self.fsamp/2)/len(I_f)*imax_f)
+                                   / 1000, 2)
+                        fq = round(np.round((self.fsamp/2)/len(Q_f)*qmax_f)
+                                   / 1000, 2)
+                        if self.fft_last_scale < max_val:
+                            self.fft_last_scale = max_val+1000
+                        else:
+                            if self.fft_last_scale / (max_val + 1) > 2:
+                                while True:
+                                    ratio = self.fft_last_scale / (max_val + 1)
+                                    if ratio > 2:
+                                        self.fft_last_scale //= 2
+                                    else:
+                                        break
+                        self.graph.annotate(f' I - {fi} KHz',
+                                            xy=(0, 0),
                                             xytext=(np.max(I_f)//10*6,
-                                                    max_val))
-                        self.graph.annotate(f'Q {fq} Hz',
-                                            xy=(qmax_f, max_val),
+                                                    self.fft_last_scale))
+                        self.graph.annotate(f'Q - {fq} KHz',
+                                            xy=(0, 0),
                                             xytext=(np.max(I_f)//10*8,
-                                                    max_val))
+                                                    self.fft_last_scale))
                         self.graph.plot(I_f, I_fft, 'r')
                         self.graph.plot(Q_f, Q_fft)
+                        plt.ylim(0, (self.fft_last_scale+1))
                         self.graph.legend(['I', 'Q'], loc='lower right')
                     else:
+                        imx = max(i_data)
+                        qmx = max(q_data)
+                        self.graph.annotate(f'I - {imx}',
+                                            xy=(0, 0),
+                                            xytext=(self.graph_len//10*6,
+                                                    self.graph_scale))
+                        self.graph.annotate(f'Q - {qmx}',
+                                            xy=(0, 0),
+                                            xytext=(self.graph_len//10*8,
+                                                    self.graph_scale))
                         self.graph.plot(i_data, 'r')
                         self.graph.plot(q_data)
                         plt.ylim(-self.graph_scale, self.graph_scale)
@@ -323,7 +351,7 @@ class DDC(Tk):
                     self.throw_warning('No data available at socket!')
                     self.no_data_warn = True
         self.canvas.draw()
-        self.after(int(500000/(self.fsamp)), self.draw_ddc)
+        self.after(int(3), self.draw_ddc)
 
     def read_btn_command(self) -> None:
         """ Depricated """
