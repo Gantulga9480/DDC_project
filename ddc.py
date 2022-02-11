@@ -45,6 +45,7 @@ class DDC(Tk):
         self.d305_expinv_var = BooleanVar(self)
         self.d309_uBmode_var = BooleanVar(self)
         self.dfir_var = BooleanVar(self, value=False)
+        self.pmod_var = BooleanVar(self, value=True)
 
         self.UDP_server_soc = None
 
@@ -134,6 +135,11 @@ class DDC(Tk):
         self.d309_uBmode_c = ttk.Checkbutton(self.opt_frame,
                                              variable=self.d309_uBmode_var)
 
+        self.pmod_sync_l = ttk.Label(self.opt_frame, text='Pmod')
+        self.pmod_sync_c = ttk.Checkbutton(self.opt_frame,
+                                           variable=self.pmod_var,
+                                           command=self.pmod_c_command)
+
         self.d305_expoff_e = ttk.Entry(self.opt_frame, width=25)
 
         self.btn_frame = ttk.Frame(self)
@@ -169,11 +175,13 @@ class DDC(Tk):
 
         self.opt_frame.grid(row=0, column=4, columnspan=3)
         self.d305_expoff_l.grid(row=0, column=0, padx=1)
-        self.d305_expoff_e.grid(row=0, column=1, padx=10)
+        self.d305_expoff_e.grid(row=0, column=1)
         self.d305_expinv_l.grid(row=0, column=2, padx=1)
-        self.d305_expinv_c.grid(row=0, column=3, padx=10)
+        self.d305_expinv_c.grid(row=0, column=3)
         self.d309_uBmode_l.grid(row=0, column=4, padx=1)
-        self.d309_uBmode_c.grid(row=0, column=5, padx=10)
+        self.d309_uBmode_c.grid(row=0, column=5)
+        self.pmod_sync_l.grid(row=0, column=6)
+        self.pmod_sync_c.grid(row=0, column=7)
 
         self.canvas.get_tk_widget().grid(row=1, column=4,
                                          rowspan=15, columnspan=3)
@@ -631,6 +639,12 @@ class DDC(Tk):
             self.graph_btn['text'] = 'RAW'
         else:
             self.graph_btn['text'] = 'FFT'
+
+    def pmod_c_command(self):
+        print(self.pmod_var.get())
+        self.udp_send('L'.encode())
+        self.udp_send(f'P{int(self.pmod_var.get())}'.encode())
+        self.udp_send('L'.encode())
 
     def throw_warning(self, msg):
         messagebox.showwarning('Warning', msg)

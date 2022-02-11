@@ -1,5 +1,12 @@
 import matplotlib.pylab as plt
 import csv
+import numpy as np
+import argparse
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--fft', action='store_const', const=True)
+args = parser.parse_args()
 
 
 data = []
@@ -18,9 +25,15 @@ with open('DDC_DATA/Data_1.csv', 'r', newline='') as f:
 
 data = iter(data)
 for item in data:
-    plt.plot(item)
-    print(len(item))
-    item = data.__next__()
-    print(len(item))
-    plt.plot(item)
+    i = item
+    q = item = data.__next__()
+    if args.fft:
+        power_i = np.abs(np.fft.rfft(np.array(i))) / len(i)
+        power_q = np.abs(np.fft.rfft(np.array(q))) / len(q)
+        frequency = np.linspace(0, 300_000/2, len(power_i))
+        plt.plot(frequency, power_i)
+        plt.plot(frequency, power_q)
+    else:
+        plt.plot(i)
+        plt.plot(q)
     plt.show()
