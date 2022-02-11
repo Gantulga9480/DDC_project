@@ -159,11 +159,11 @@ class DDC(Tk):
 
         self.graph_nav_frame = ttk.Frame(self)
         self.graph_nav_x_l = ttk.Label(self.graph_nav_frame,
-                                       text='Set interval (max = 250)')
+                                       text='Set X (max = 250)')
         self.graph_nav_x_e = ttk.Entry(self.graph_nav_frame, width=10)
         self.graph_nav_x_e.bind('<Return>', self.graph_nav_x_btn_command)
         self.graph_nav_y_l = ttk.Label(self.graph_nav_frame,
-                                       text='Set scale (max = 35000)')
+                                       text='Set Y (max = 35k)')
         self.graph_nav_y_e = ttk.Entry(self.graph_nav_frame, width=10)
         self.graph_nav_y_e.bind('<Return>', self.graph_nav_y_btn_command)
 
