@@ -641,7 +641,6 @@ class DDC(Tk):
             self.graph_btn['text'] = 'FFT'
 
     def pmod_c_command(self):
-        print(self.pmod_var.get())
         self.udp_send('L'.encode())
         self.udp_send(f'P{int(self.pmod_var.get())}'.encode())
         self.udp_send('L'.encode())
