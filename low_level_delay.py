@@ -65,7 +65,7 @@ elif (os.name == 'posix'):  # for Linux:
         return monotonic_time()*1e3
 
 
-def delay(delay_ms):
+def delay_ms(delay_ms):
     "delay for delay_ms milliseconds (ms)"
     t_start = millis()
     while (millis() - t_start < delay_ms):
@@ -73,7 +73,7 @@ def delay(delay_ms):
     return
 
 
-def delayMicroseconds(delay_us):
+def delay_us(delay_us):
     "delay for delay_us microseconds (us)"
     t_start = micros()
     while (micros() - t_start < delay_us):

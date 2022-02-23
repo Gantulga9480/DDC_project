@@ -7,6 +7,7 @@ from matplotlib import pyplot as plt
 from DDC_REGS import *
 import select
 import json
+from low_level_delay import delay_ms
 
 
 class DDC(Tk):
@@ -52,6 +53,7 @@ class DDC(Tk):
         self.title('DDC Utility')
         self.resizable(False, False)
 
+        # -------------------------------------------------------------DDC CONF
         self.d300l = ttk.Label(self, text='DDC MODE            ')
         self.d301l = ttk.Label(self, text='NCO MODE            ')
         self.d302l = ttk.Label(self, text='NCO SYNC MASK       ')
@@ -100,98 +102,6 @@ class DDC(Tk):
         self.ddcClock_e.insert(END, '30')
         self.config(bg="#FFFFFF")
 
-        self.ip_frame = ttk.Frame(self)
-        self.ip_style = ttk.Style(self.ip_frame)
-        self.ip_style.configure('TFrame', background='white')
-
-        self.pcip_l = ttk.Label(self.ip_frame, text='PC  IP:PORT   ')
-        self.pcip_style = ttk.Style(self.pcip_l)
-        self.pcip_style.configure('TLabel', background='white')
-        self.ddcip_l = ttk.Label(self.ip_frame,
-                                 text='DDC IP:PORT               ')
-
-        self.pcip_m = ttk.Combobox(self.ip_frame,
-                                   value=self.host_ips,
-                                   textvariable=self.PC_IP)
-        self.pcip_m.current(0)
-        self.pcip_m.config(state="readonly", width=15)
-        self.pcip_m.bind("<<ComboboxSelected>>")
-
-        self.pcport_e = ttk.Entry(self.ip_frame, width=7)
-        self.ddcip_e = ttk.Entry(self.ip_frame, width=18)
-        self.ddcport_e = ttk.Entry(self.ip_frame, width=7)
-
-        self.opt_frame = ttk.Frame(self)
-
-        self.d305_expoff_l = ttk.Label(self.opt_frame,
-                                       text='INPUT ExpOff (optional)')
-        self.d305_expinv_l = ttk.Label(self.opt_frame, text='INPUT ExpInv')
-        self.d309_uBmode_l = ttk.Label(self.opt_frame, text='UNIQUE B MODE')
-
-        self.d305_expinv_c = ttk.Checkbutton(self.opt_frame,
-                                             variable=self.d305_expinv_var)
-        self.d305_expinv_style = ttk.Style(self.d305_expinv_c)
-        self.d305_expinv_style.configure('TCheckbutton', background='white')
-        self.d309_uBmode_c = ttk.Checkbutton(self.opt_frame,
-                                             variable=self.d309_uBmode_var)
-
-        self.pmod_sync_l = ttk.Label(self.opt_frame, text='Pmod')
-        self.pmod_sync_c = ttk.Checkbutton(self.opt_frame,
-                                           variable=self.pmod_var,
-                                           command=self.pmod_c_command)
-
-        self.d305_expoff_e = ttk.Entry(self.opt_frame, width=25)
-
-        self.btn_frame = ttk.Frame(self)
-
-        self.con_btn = ttk.Button(self.btn_frame, text="Connect",
-                                  command=self.connect_ddc)
-        self.con_btn_style = ttk.Style(self.con_btn)
-        self.con_btn_style.configure('TButton', background='white')
-        self.send_btn = ttk.Button(self.btn_frame, text="Write",
-                                   command=self.send_btn_command,
-                                   state=DISABLED)
-        self.read_btn = ttk.Button(self.btn_frame, text="Read",
-                                   command=self.read_btn_command,
-                                   state=DISABLED)
-
-        self.fig = plt.figure()
-        self.graph = plt.subplot()
-
-        self.canvas = FigureCanvasTkAgg(self.fig, master=self)
-        self.canvas.draw()
-        self.graph_btn = ttk.Button(self, text="FFT",
-                                    command=self.graph_btn_command)
-
-        self.graph_nav_frame = ttk.Frame(self)
-        self.graph_nav_x_l = ttk.Label(self.graph_nav_frame,
-                                       text='Set X (max = 250)')
-        self.graph_nav_x_e = ttk.Entry(self.graph_nav_frame, width=10)
-        self.graph_nav_x_e.bind('<Return>', self.graph_nav_x_btn_command)
-        self.graph_nav_y_l = ttk.Label(self.graph_nav_frame,
-                                       text='Set Y (max = 35k)')
-        self.graph_nav_y_e = ttk.Entry(self.graph_nav_frame, width=10)
-        self.graph_nav_y_e.bind('<Return>', self.graph_nav_y_btn_command)
-
-        self.opt_frame.grid(row=0, column=4, columnspan=3)
-        self.d305_expoff_l.grid(row=0, column=0, padx=1)
-        self.d305_expoff_e.grid(row=0, column=1)
-        self.d305_expinv_l.grid(row=0, column=2, padx=1)
-        self.d305_expinv_c.grid(row=0, column=3)
-        self.d309_uBmode_l.grid(row=0, column=4, padx=1)
-        self.d309_uBmode_c.grid(row=0, column=5)
-        self.pmod_sync_l.grid(row=0, column=6)
-        self.pmod_sync_c.grid(row=0, column=7)
-
-        self.canvas.get_tk_widget().grid(row=1, column=4,
-                                         rowspan=15, columnspan=3)
-        self.graph_nav_frame.grid(row=16, column=4)
-        self.graph_nav_x_l.grid(row=0, column=0, sticky=NS)
-        self.graph_nav_x_e.grid(row=0, column=1, sticky=NS)
-        self.graph_nav_y_l.grid(row=0, column=2, sticky=NS)
-        self.graph_nav_y_e.grid(row=0, column=3, sticky=NS)
-        self.graph_btn.grid(row=16, column=5, sticky=NS)
-
         self.d300l.grid(row=0, column=0, sticky=W)
         self.d300m.grid(row=0, column=1)
         self.d301l.grid(row=1, column=0, sticky=W)
@@ -224,6 +134,28 @@ class DDC(Tk):
         self.ddcClock_l.grid(row=14, column=0)
         self.ddcClock_e.grid(row=14, column=1)
 
+        # --------------------------------------------------------------IP/PORT
+        self.ip_frame = ttk.Frame(self)
+        self.ip_style = ttk.Style(self.ip_frame)
+        self.ip_style.configure('TFrame', background='white')
+
+        self.pcip_l = ttk.Label(self.ip_frame, text='PC  IP:PORT   ')
+        self.pcip_style = ttk.Style(self.pcip_l)
+        self.pcip_style.configure('TLabel', background='white')
+        self.ddcip_l = ttk.Label(self.ip_frame,
+                                 text='DDC IP:PORT               ')
+
+        self.pcip_m = ttk.Combobox(self.ip_frame,
+                                   value=self.host_ips,
+                                   textvariable=self.PC_IP)
+        self.pcip_m.current(0)
+        self.pcip_m.config(state="readonly", width=15)
+        self.pcip_m.bind("<<ComboboxSelected>>")
+
+        self.pcport_e = ttk.Entry(self.ip_frame, width=7)
+        self.ddcip_e = ttk.Entry(self.ip_frame, width=18)
+        self.ddcport_e = ttk.Entry(self.ip_frame, width=7)
+
         self.ip_frame.grid(row=15, column=0, columnspan=2, sticky=EW)
         self.pcip_l.grid(row=0, column=0, sticky=W)
         self.pcip_m.grid(row=0, column=1)
@@ -232,11 +164,104 @@ class DDC(Tk):
         self.ddcip_e.grid(row=1, column=1)
         self.ddcport_e.grid(row=1, column=2)
 
+        # ---------------------------------------------------------------OPTION
+        self.opt_frame = ttk.Frame(self)
+        self.d305_expoff_l = ttk.Label(self.opt_frame,
+                                       text='INPUT ExpOff (optional)')
+        self.d305_expinv_l = ttk.Label(self.opt_frame, text='INPUT ExpInv')
+        self.d309_uBmode_l = ttk.Label(self.opt_frame, text='UNIQUE B MODE')
+
+        self.d305_expinv_c = ttk.Checkbutton(self.opt_frame,
+                                             variable=self.d305_expinv_var)
+        self.d305_expinv_style = ttk.Style(self.d305_expinv_c)
+        self.d305_expinv_style.configure('TCheckbutton', background='white')
+        self.d309_uBmode_c = ttk.Checkbutton(self.opt_frame,
+                                             variable=self.d309_uBmode_var)
+
+        self.pmod_sync_l = ttk.Label(self.opt_frame, text='Pmod')
+        self.pmod_sync_c = ttk.Checkbutton(self.opt_frame,
+                                           variable=self.pmod_var,
+                                           command=self.pmod_c_command)
+        self.d305_expoff_e = ttk.Entry(self.opt_frame, width=25)
+
+        self.opt_frame.grid(row=0, column=2)
+        self.d305_expoff_l.grid(row=0, column=0, padx=1)
+        self.d305_expoff_e.grid(row=0, column=1)
+        self.d305_expinv_l.grid(row=0, column=2, padx=1)
+        self.d305_expinv_c.grid(row=0, column=3)
+        self.d309_uBmode_l.grid(row=0, column=4, padx=1)
+        self.d309_uBmode_c.grid(row=0, column=5)
+        self.pmod_sync_l.grid(row=0, column=6)
+        self.pmod_sync_c.grid(row=0, column=7)
+
+        # ---------------------------------------------------------------BUTTON
+        self.btn_frame = ttk.Frame(self)
+        self.con_btn = ttk.Button(self.btn_frame, text="Connect",
+                                  command=self.connect_ddc)
+        self.send_btn = ttk.Button(self.btn_frame, text="Write",
+                                   command=self.send_btn_command,
+                                   state=DISABLED)
+        self.read_btn = ttk.Button(self.btn_frame, text="Read",
+                                   command=self.read_btn_command,
+                                   state=DISABLED)
+        self.con_btn_style = ttk.Style(self.con_btn)
+        self.con_btn_style.configure('TButton', background='white')
+
         self.btn_frame.grid(row=16, column=0, columnspan=2)
         self.con_btn.grid(row=0, column=0, padx=3)
         self.send_btn.grid(row=0, column=2, padx=3)
         self.read_btn.grid(row=0, column=1, padx=3)
 
+        # ---------------------------------------------------------------FIGURE
+        self.fig = plt.figure()
+        self.graph = plt.subplot()
+        self.canvas = FigureCanvasTkAgg(self.fig, master=self)
+        self.canvas.draw()
+
+        self.canvas.get_tk_widget().grid(row=1, column=2,
+                                         rowspan=15)
+
+        # ------------------------------------------------------------GRAPH/NAV
+        self.graph_nav_frame = ttk.Frame(self)
+        self.graph_btn = ttk.Button(self.graph_nav_frame, text="FFT",
+                                    command=self.graph_btn_command)
+        self.graph_nav_x_l = ttk.Label(self.graph_nav_frame,
+                                       text='Set X (max = 250)')
+        self.graph_nav_x_e = ttk.Entry(self.graph_nav_frame, width=10)
+        self.graph_nav_x_e.bind('<Return>', self.graph_nav_x_btn_command)
+        self.graph_nav_y_l = ttk.Label(self.graph_nav_frame,
+                                       text='Set Y (max = 35k)')
+        self.graph_nav_y_e = ttk.Entry(self.graph_nav_frame, width=10)
+        self.graph_nav_y_e.bind('<Return>', self.graph_nav_y_btn_command)
+
+        self.graph_nav_frame.grid(row=16, column=2)
+        self.graph_nav_x_l.grid(row=0, column=0)
+        self.graph_nav_x_e.grid(row=0, column=1, padx=10)
+        self.graph_nav_y_l.grid(row=0, column=2)
+        self.graph_nav_y_e.grid(row=0, column=3, padx=10)
+        self.graph_btn.grid(row=0, column=4, padx=20)
+
+        # ----------------------------------------------------------------CODER
+        self.coder_power = False
+        self.coder_start = False
+        self.coder_trigger = False
+
+        self.coder_frame = ttk.Frame(self)
+        self.coder_power_btn = ttk.Button(self.coder_frame,
+                                          text='POWER ON',
+                                          command=self.coder_power_btn_cmd)
+        self.coder_start_btn = ttk.Button(self.coder_frame,
+                                          text='START',
+                                          command=self.coder_start_btn_cmd)
+        self.coder_trigger_btn = ttk.Button(self.coder_frame,
+                                            text='TRIGGER ON',
+                                            command=self.coder_trigger_btn_cmd)
+        self.coder_frame.grid(row=0, column=3, rowspan=17)
+        self.coder_power_btn.grid(row=0, column=0)
+        self.coder_start_btn.grid(row=1, column=0)
+        self.coder_trigger_btn.grid(row=2, column=0)
+
+        # ---------------------------------------------------------------------
         self.pcport_e.insert(END, '10')
         self.ddcip_e.insert(END, '10.3.4.123')
         self.ddcport_e.insert(END, '11')
@@ -324,9 +349,9 @@ class DDC(Tk):
                                         self.fft_last_scale //= 2
                                     else:
                                         break
-                        self.graph.annotate(f' I - {fi} KHz',
+                        self.graph.annotate(f'I - {fi} KHz',
                                             xy=(0, 0),
-                                            xytext=(np.max(I_f)//10*6,
+                                            xytext=(np.max(I_f)//2,
                                                     self.fft_last_scale))
                         self.graph.annotate(f'Q - {fq} KHz',
                                             xy=(0, 0),
@@ -359,11 +384,11 @@ class DDC(Tk):
                     self.throw_warning('No data available at socket!')
                     self.no_data_warn = True
         self.canvas.draw()
-        self.after(int(3), self.draw_ddc)
+        self.after(int(1), self.draw_ddc)
 
     def read_btn_command(self) -> None:
         """ Depricated """
-        cmd = 'READ_DDC'
+        cmd = 'R'
         res = None
         self.udp_send('L'.encode())
         self.udp_send(cmd.encode())
@@ -410,7 +435,11 @@ class DDC(Tk):
         self.is_graph = False
         self.udp_send('L'.encode())
         self.udp_send(data_to_send.encode())
+        delay_ms(100)
         self.udp_send('L'.encode())
+        self.connect_ddc()
+        delay_ms(10)
+        self.connect_ddc()
         self.is_graph = True
         self.REGS_LAST['302'] = conf[2]
         self.REGS_LAST['303'] = int(self.d303e.get())
@@ -569,6 +598,14 @@ class DDC(Tk):
             try:
                 self.UDP_server_soc.bind((self.PC_IP.get(),
                                           int(self.pcport_e.get())))
+                self.udp_send('Ct'.encode())  # Coder Trigger off
+                delay_ms(100)
+                self.udp_send('c'.encode())
+                self.coder_status_callback()
+                if self.coder_start:
+                    self.udp_send('CT'.encode())  # Coder Trigger on
+                    self.coder_trigger = True
+                    self.coder_trigger_btn['text'] = 'TRIGGER OFF'
                 self.con_btn['text'] = 'Disconnect'
                 self.send_btn['state'] = ACTIVE
                 self.is_con = True
@@ -590,20 +627,19 @@ class DDC(Tk):
         return round(2**32 * ((value * 1000) / self.fclock))
 
     def udp_send(self, data: bytes) -> None:
-        if self.is_con:
-            try:
-                self.UDP_server_soc.sendto(data, (self.ddcip_e.get(),
-                                                  int(self.ddcport_e.get())))
-            except Exception:
-                # TODO
-                messagebox.showerror('Error', 'UDP SEND ERROR!')
+        try:
+            self.UDP_server_soc.sendto(data, (self.ddcip_e.get(),
+                                       int(self.ddcport_e.get())))
+            return True
+        except Exception:
+            messagebox.showerror('Error', 'UDP SEND ERROR!')
+            return False
 
     def udp_receive(self, size):
-        if self.is_con:
-            ready, _, _ = select.select([self.UDP_server_soc], [], [], 0.05)
-            if ready:
-                bytesAddressPair = self.UDP_server_soc.recv(size)
-                return bytesAddressPair.hex()
+        ready, _, _ = select.select([self.UDP_server_soc], [], [], 0.01)
+        if ready:
+            bytesAddressPair = self.UDP_server_soc.recv(size)
+            return bytesAddressPair.hex()
 
     def graph_nav_x_btn_command(self, _):
         try:
@@ -643,7 +679,11 @@ class DDC(Tk):
     def pmod_c_command(self):
         self.udp_send('L'.encode())
         self.udp_send(f'P{int(self.pmod_var.get())}'.encode())
+        delay_ms(100)
         self.udp_send('L'.encode())
+        self.connect_ddc()
+        delay_ms(10)
+        self.connect_ddc()
 
     def throw_warning(self, msg):
         messagebox.showwarning('Warning', msg)
@@ -655,6 +695,68 @@ class DDC(Tk):
         if val & (1 << (bits-1)):
             val -= 1 << bits
         return val
+
+    def coder_power_btn_cmd(self):
+        if self.udp_send('L'.encode()):
+            if not self.coder_power:
+                self.udp_send('CP'.encode())
+                self.coder_power = True
+                self.coder_power_btn['text'] = 'POWER OFF'
+            else:
+                self.udp_send('Cp'.encode())
+                self.coder_power = False
+                self.coder_start = False
+                self.coder_trigger = False
+                self.coder_start_btn['state'] = ACTIVE
+                self.coder_power_btn['text'] = 'POWER ON'
+                self.coder_trigger_btn['text'] = 'TRIGGER ON'
+            self.udp_send('L'.encode())
+
+    def coder_start_btn_cmd(self):
+        if self.udp_send('L'.encode()):
+            if not self.coder_start and self.coder_power:
+                self.udp_send('CS'.encode())
+                self.coder_start = True
+                self.coder_start_btn['state'] = DISABLED
+            self.udp_send('L'.encode())
+
+    def coder_trigger_btn_cmd(self):
+        if self.udp_send('L'.encode()):
+            if not self.coder_trigger and self.coder_start:
+                self.udp_send('CT'.encode())
+                self.coder_trigger = True
+                self.coder_trigger_btn['text'] = 'TRIGGER OFF'
+            else:
+                self.udp_send('Ct'.encode())
+                self.coder_trigger = False
+                self.coder_trigger_btn['text'] = 'TRIGGER ON'
+            self.udp_send('L'.encode())
+
+    def coder_status_callback(self):
+        while True:
+            res = self.udp_receive(self.BUFFER_SIZE)
+            if res[:2] == '63':  # char 'c'
+                break
+            elif res is None:
+                return
+        self.coder_power = bool(int(res[3]))
+        self.coder_start = bool(int(res[5]))
+        self.coder_trigger = bool(int(res[7]))
+
+        if not self.coder_power:
+            self.coder_power_btn['text'] = 'POWER ON'
+        else:
+            self.coder_power_btn['text'] = 'POWER OFF'
+
+        if not self.coder_start:
+            self.coder_start_btn['state'] = ACTIVE
+        else:
+            self.coder_start_btn['state'] = DISABLED
+
+        if not self.coder_trigger:
+            self.coder_trigger_btn['text'] = 'TRIGGER ON'
+        else:
+            self.coder_trigger_btn['text'] = 'TRIGGER OFF'
 
 
 DDC()
