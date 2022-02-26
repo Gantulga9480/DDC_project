@@ -16,17 +16,12 @@ with open('DDC_DATA/Data_1.csv', 'r', newline='') as f:
     reader = csv.reader(f, delimiter=' ')
     for item in reader:
         d = item[0].split(',')
-        d.pop(0)
-        d = [int(x) for x in d]
-        i_data.append(d)
-        d = reader.__next__()[0].split(',')
-        d.pop(0)
-        d = [int(x) for x in d]
-        q_data.append(d)
+        a = [int(x) for x in d]
+        i_data.append(a)
 
 
-for u in range(len(i_data)-8):
-    i = i_data[u] + i_data[u + 1] + i_data[u + 2]
+for u in range(len(i_data)):
+    i = i_data[u]
     if args.fft:
         power_i = np.abs(np.fft.rfft(np.array(i))) / len(i)
         # power_q = np.abs(np.fft.rfft(np.array(q))) / len(q)

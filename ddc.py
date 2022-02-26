@@ -240,6 +240,8 @@ class DDC(Tk):
         self.graph_nav_y_l.grid(row=0, column=2)
         self.graph_nav_y_e.grid(row=0, column=3, padx=10)
         self.graph_btn.grid(row=0, column=4, padx=20)
+        self.btn = ttk.Button(self)
+        # self.btn.grid(row=17, column=2, ipadx=450)
 
         # ----------------------------------------------------------------CODER
         self.coder_power = False
@@ -306,7 +308,7 @@ class DDC(Tk):
         self.is_fft = False
         self.is_graph = True
 
-        self.graph_len = 250
+        self.graph_len = 500
         self.graph_scale = 35000
         self.fft_last_scale = 5000
 
@@ -318,12 +320,18 @@ class DDC(Tk):
             self.graph.cla()
             msg = self.udp_receive(self.BUFFER_SIZE)
             if msg:
+                # i_data = [self.hex2int(msg[i+2:i+4] + msg[i:i+2])
+                #           for i in
+                #           range(8, len(msg)-8, 8)]
+                # q_data = [self.hex2int(msg[i+2:i+4] + msg[i:i+2])
+                #           for i in
+                #           range(12, len(msg)-8, 8)]
                 i_data = [self.hex2int(msg[i+2:i+4] + msg[i:i+2])
                           for i in
-                          range(8, len(msg)-8, 8)]
+                          range(8, len(msg)-8, 4)]
                 q_data = [self.hex2int(msg[i+2:i+4] + msg[i:i+2])
                           for i in
-                          range(12, len(msg)-8, 8)]
+                          range(8, len(msg)-8, 4)]
                 if len(i_data) > 0:
                     if self.is_fft:
                         i_fft = np.fft.rfft(np.array(i_data))
@@ -598,23 +606,28 @@ class DDC(Tk):
             try:
                 self.UDP_server_soc.bind((self.PC_IP.get(),
                                           int(self.pcport_e.get())))
-                self.udp_send('Ct'.encode())  # Coder Trigger off
-                delay_ms(100)
-                self.udp_send('c'.encode())
-                self.coder_status_callback()
-                if self.coder_start:
-                    self.udp_send('CT'.encode())  # Coder Trigger on
-                    self.coder_trigger = True
-                    self.coder_trigger_btn['text'] = 'TRIGGER OFF'
-                self.con_btn['text'] = 'Disconnect'
-                self.send_btn['state'] = ACTIVE
-                self.is_con = True
             except OSError as e:
                 if str(e).split(' ')[1] == '10048]':
                     messagebox.showerror('Error', 'Can\'t listen on port '
                                          f'{self.pcport_e.get()}')
+                return
             except Exception:
                 messagebox.showerror('Error', 'Please insert valid IP/PORT')
+                return
+            self.udp_send('L'.encode())
+            delay_ms(50)
+            self.udp_send('L'.encode())
+            self.udp_send('Ct'.encode())  # Coder Trigger off
+            self.release_udp_buffer()
+            self.udp_send('c'.encode())
+            self.coder_status_callback()
+            if self.coder_start:
+                self.udp_send('CT'.encode())  # Coder Trigger on
+                self.coder_trigger = True
+                self.coder_trigger_btn['text'] = 'TRIGGER OFF'
+            self.con_btn['text'] = 'Disconnect'
+            self.send_btn['state'] = ACTIVE
+            self.is_con = True
         else:
             self.UDP_server_soc.shutdown(socket.SHUT_RDWR)
             self.UDP_server_soc.close()
@@ -646,10 +659,10 @@ class DDC(Tk):
             val = int(self.graph_nav_x_e.get())
         except ValueError:
             self.bell()
-            val = 250
-        if val > 250:
+            val = 500
+        if val > 500:
             self.bell()
-            val = 250
+            val = 500
         elif val < 5:
             self.bell()
             val = 5
@@ -702,6 +715,7 @@ class DDC(Tk):
                 self.udp_send('CP'.encode())
                 self.coder_power = True
                 self.coder_power_btn['text'] = 'POWER OFF'
+                self.udp_send('L'.encode())
             else:
                 self.udp_send('Cp'.encode())
                 self.coder_power = False
@@ -710,7 +724,7 @@ class DDC(Tk):
                 self.coder_start_btn['state'] = ACTIVE
                 self.coder_power_btn['text'] = 'POWER ON'
                 self.coder_trigger_btn['text'] = 'TRIGGER ON'
-            self.udp_send('L'.encode())
+                self.udp_send('L'.encode())
 
     def coder_start_btn_cmd(self):
         if self.udp_send('L'.encode()):
@@ -733,30 +747,37 @@ class DDC(Tk):
             self.udp_send('L'.encode())
 
     def coder_status_callback(self):
+        count = 0
+        while count < 100:
+            res = self.udp_receive(self.BUFFER_SIZE)
+            if res is None:
+                count += 1
+            elif res[:2] == '63':  # char 'c'
+                self.coder_power = bool(int(res[3]))
+                self.coder_start = bool(int(res[5]))
+                self.coder_trigger = bool(int(res[7]))
+
+                if not self.coder_power:
+                    self.coder_power_btn['text'] = 'POWER ON'
+                else:
+                    self.coder_power_btn['text'] = 'POWER OFF'
+
+                if not self.coder_start:
+                    self.coder_start_btn['state'] = ACTIVE
+                else:
+                    self.coder_start_btn['state'] = DISABLED
+
+                if not self.coder_trigger:
+                    self.coder_trigger_btn['text'] = 'TRIGGER ON'
+                else:
+                    self.coder_trigger_btn['text'] = 'TRIGGER OFF'
+                break
+
+    def release_udp_buffer(self):
         while True:
             res = self.udp_receive(self.BUFFER_SIZE)
-            if res[:2] == '63':  # char 'c'
-                break
-            elif res is None:
+            if res is None:
                 return
-        self.coder_power = bool(int(res[3]))
-        self.coder_start = bool(int(res[5]))
-        self.coder_trigger = bool(int(res[7]))
-
-        if not self.coder_power:
-            self.coder_power_btn['text'] = 'POWER ON'
-        else:
-            self.coder_power_btn['text'] = 'POWER OFF'
-
-        if not self.coder_start:
-            self.coder_start_btn['state'] = ACTIVE
-        else:
-            self.coder_start_btn['state'] = DISABLED
-
-        if not self.coder_trigger:
-            self.coder_trigger_btn['text'] = 'TRIGGER ON'
-        else:
-            self.coder_trigger_btn['text'] = 'TRIGGER OFF'
 
 
 DDC()

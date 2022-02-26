@@ -23,6 +23,6 @@ soc.sendto(f'{args.msg}'.encode(), stm_addr)
 delay_ms(100)
 ready, _, _ = select.select([soc], [], [], 0.1)
 if ready:
-    data = soc.recv(4)
+    data = soc.recv(100)
     print(data.hex())
 soc.sendto('L'.encode(), stm_addr)

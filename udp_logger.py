@@ -8,6 +8,7 @@ from shutil import rmtree
 parser = argparse.ArgumentParser()
 parser.add_argument('ip', type=str, help='PC static IP')
 parser.add_argument('port', type=int, help='PC receive PORT')
+parser.add_argument('--iq', action='store_const', const=True)
 parser.add_argument('--show', action='store_const', const=True)
 parser.add_argument('--silent', action='store_const', const=True)
 parser.add_argument('--files', action='store', type=int)
@@ -22,16 +23,20 @@ P_MOD_PACKET_COUNT = args.rows if args.rows else 10000
 TOTAL_FILES = args.files if args.files else 1
 prev = 0
 size = 0
+data = ''
 
 
-def check_header(header):
+def check_header(msg):
     global prev
-    if header == 1:
-        prev = 1
+    if msg[:8] == '41424142':
+        if prev == '41424142':
+            print('LOSS FOOTER')
+        prev = '41424142'
     else:
-        if header - 1 != prev:
-            print(f'LOSS at {prev} to {header}')
-        prev = header
+        if msg[-8:] == '43444344':
+            if prev == '43444344':
+                print('LOSS HEADER')
+        prev = '43444344'
 
 
 def hex2int(hexval):
@@ -46,7 +51,7 @@ def udp_receive():
     ready, _, _ = select.select([UDPServerSocket], [], [], 0.05)
     if ready:
         msg = UDPServerSocket.recv(1008).hex()
-        check_header(int(msg[1]))
+        check_header(msg)
         return msg
     return
 
@@ -72,18 +77,33 @@ if not args.show:
                     packet_count += 1
                     try:
                         msg = udp_receive()
-                        i_data = [hex2int(msg[i+2:i+4] + msg[i:i+2])
-                                  for i in
-                                  range(8, len(msg)-8, 8)]
-                        q_data = [hex2int(msg[i+2:i+4] + msg[i:i+2])
-                                  for i in
-                                  range(12, len(msg)-8, 8)]
-                        i_data.insert(0, int(msg[1]))
-                        q_data.insert(0, int(msg[1]))
-                        writer.writerow(i_data)
-                        writer.writerow(q_data)
-                        size += (len(str(i_data).replace(' ', '')))/1024/1024
-                        size += (len(str(q_data).replace(' ', '')))/1024/1024
+                        if args.iq:
+                            i_data = [hex2int(msg[i+2:i+4] + msg[i:i+2])
+                                      for i in
+                                      range(8, len(msg)-8, 8)]
+                            q_data = [hex2int(msg[i+2:i+4] + msg[i:i+2])
+                                      for i in
+                                      range(12, len(msg)-8, 8)]
+                            i_data.insert(0, int(msg[1]))
+                            q_data.insert(0, int(msg[1]))
+                            writer.writerow(i_data)
+                            writer.writerow(q_data)
+                            size += (len(str(i_data).replace(' ', ''))) \
+                                / 1024 / 1024
+                            size += (len(str(q_data).replace(' ', '')))\
+                                / 1024 / 1024
+                        else:
+                            if prev == '43444344':
+                                data += [hex2int(msg[i+2:i+4] + msg[i:i+2])
+                                         for i in
+                                         range(0, len(msg)-8, 4)]
+                                writer.writerow(data)
+                                size += (len(str(data).replace(' ', ''))) \
+                                    / 1024 / 1024
+                            elif prev == '41424142':
+                                data = [hex2int(msg[i+2:i+4] + msg[i:i+2])
+                                        for i in
+                                        range(8, len(msg), 4)]
                     except Exception as e:
                         try:
                             rmtree('DDC_DATA')
