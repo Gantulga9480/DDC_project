@@ -20,15 +20,14 @@ with open('DDC_DATA/Data_1.csv', 'r', newline='') as f:
         i_data.append(a)
 
 
-for u in range(len(i_data)):
-    i = i_data[u]
+for item in i_data:
     if args.fft:
-        power_i = np.abs(np.fft.rfft(np.array(i))) / len(i)
+        power_i = np.abs(np.fft.rfft(np.array(item))) / len(item)
         # power_q = np.abs(np.fft.rfft(np.array(q))) / len(q)
         frequency = np.linspace(0, 300_000/2, len(power_i))
         plt.plot(frequency, power_i)
         # plt.plot(frequency, power_q)
     else:
-        plt.plot(i)
+        plt.plot(item)
         # plt.plot(q)
     plt.show()

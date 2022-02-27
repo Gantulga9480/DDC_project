@@ -308,89 +308,70 @@ class DDC(Tk):
         self.is_fft = False
         self.is_graph = True
 
-        self.graph_len = 500
+        self.graph_len = 1000
+        self.graph_len_max = self.graph_len
         self.graph_scale = 35000
         self.fft_last_scale = 5000
+
+        self.prev_header = ''
 
         self.draw_ddc()
         self.mainloop()
 
+    def receive_packet(self):
+        msg1 = self.udp_receive(self.BUFFER_SIZE)
+        if self.prev_header == '41424142':
+            msg2 = self.udp_receive(self.BUFFER_SIZE)
+            if self.prev_header == '43444344':
+                try:
+                    msg = msg1 + msg2
+                    return msg
+                except Exception:
+                    pass
+
     def draw_ddc(self):
         if self.is_con and self.is_graph:
-            self.graph.cla()
-            msg = self.udp_receive(self.BUFFER_SIZE)
+            msg = self.receive_packet()
             if msg:
-                # i_data = [self.hex2int(msg[i+2:i+4] + msg[i:i+2])
-                #           for i in
-                #           range(8, len(msg)-8, 8)]
-                # q_data = [self.hex2int(msg[i+2:i+4] + msg[i:i+2])
-                #           for i in
-                #           range(12, len(msg)-8, 8)]
+                self.graph.cla()
                 i_data = [self.hex2int(msg[i+2:i+4] + msg[i:i+2])
                           for i in
-                          range(8, len(msg)-8, 4)]
-                q_data = [self.hex2int(msg[i+2:i+4] + msg[i:i+2])
-                          for i in
-                          range(8, len(msg)-8, 4)]
-                if len(i_data) > 0:
-                    if self.is_fft:
-                        i_fft = np.fft.rfft(np.array(i_data))
-                        q_fft = np.fft.rfft(np.array(q_data))
-                        I_fft = np.abs(i_fft/len(i_data))
-                        Q_fft = np.abs(q_fft/len(q_data))
-                        imax_f = np.argmax(I_fft)
-                        qmax_f = np.argmax(Q_fft)
-                        I_f = np.linspace(0, self.fsamp/2, len(I_fft))
-                        Q_f = np.linspace(0, self.fsamp/2, len(Q_fft))
-                        max_val = max(I_fft[imax_f], Q_fft[qmax_f])
-                        fi = round(np.round((self.fsamp/2)/len(I_f)*imax_f)
-                                   / 1000, 2)
-                        fq = round(np.round((self.fsamp/2)/len(Q_f)*qmax_f)
-                                   / 1000, 2)
-                        if self.fft_last_scale < max_val:
-                            self.fft_last_scale = max_val+1000
-                        else:
-                            if self.fft_last_scale / (max_val + 1) > 2:
-                                while True:
-                                    ratio = self.fft_last_scale / (max_val + 1)
-                                    if ratio > 2:
-                                        self.fft_last_scale //= 2
-                                    else:
-                                        break
-                        self.graph.annotate(f'I - {fi} KHz',
-                                            xy=(0, 0),
-                                            xytext=(np.max(I_f)//2,
-                                                    self.fft_last_scale))
-                        self.graph.annotate(f'Q - {fq} KHz',
-                                            xy=(0, 0),
-                                            xytext=(np.max(I_f)//10*8,
-                                                    self.fft_last_scale))
-                        self.graph.plot(I_f, I_fft, 'r')
-                        self.graph.plot(Q_f, Q_fft)
-                        plt.ylim(0, (self.fft_last_scale+1))
-                        self.graph.legend(['I', 'Q'], loc='lower right')
+                          range(0, len(msg), 4)]
+                if self.is_fft:
+                    i_fft = np.fft.rfft(np.array(i_data))
+                    I_fft = np.abs(i_fft/len(i_data))
+                    imax_f = np.argmax(I_fft)
+                    I_f = np.linspace(0, self.fsamp/2, len(I_fft))
+                    max_val = I_fft[imax_f]
+                    fi = round(np.round((self.fsamp/2)/len(I_f)*imax_f)
+                               / 1000, 2)
+                    if self.fft_last_scale < max_val:
+                        self.fft_last_scale = max_val+1000
                     else:
-                        imx = max(i_data)
-                        qmx = max(q_data)
-                        self.graph.annotate(f'I - {imx}',
-                                            xy=(0, 0),
-                                            xytext=(self.graph_len//10*6,
-                                                    self.graph_scale))
-                        self.graph.annotate(f'Q - {qmx}',
-                                            xy=(0, 0),
-                                            xytext=(self.graph_len//10*8,
-                                                    self.graph_scale))
-                        self.graph.plot(i_data, 'r')
-                        self.graph.plot(q_data)
-                        plt.ylim(-self.graph_scale, self.graph_scale)
-                        plt.xlim(0, self.graph_len)
-                        self.graph.legend(['I', 'Q'], loc='upper right')
-                    if self.no_data_warn:
-                        self.no_data_warn = False
-            else:
-                if not self.no_data_warn:
-                    self.throw_warning('No data available at socket!')
-                    self.no_data_warn = True
+                        if self.fft_last_scale / (max_val + 1) > 2:
+                            while True:
+                                ratio = self.fft_last_scale / (max_val + 1)
+                                if ratio > 2:
+                                    self.fft_last_scale //= 2
+                                else:
+                                    break
+                    self.graph.annotate(f'I - {fi} KHz',
+                                        xy=(0, 0),
+                                        xytext=(np.max(I_f)//2,
+                                                self.fft_last_scale))
+                    self.graph.plot(I_f, I_fft, 'r')
+                    plt.ylim(0, (self.fft_last_scale+1))
+                    self.graph.legend(['I', 'Q'], loc='lower right')
+                else:
+                    imx = max(i_data)
+                    self.graph.annotate(f'I - {imx}',
+                                        xy=(0, 0),
+                                        xytext=(self.graph_len//10*6,
+                                                self.graph_scale))
+                    self.graph.plot(i_data, 'r')
+                    plt.ylim(-self.graph_scale, self.graph_scale)
+                    plt.xlim(0, self.graph_len)
+                    self.graph.legend(['I'], loc='upper right')
         self.canvas.draw()
         self.after(int(1), self.draw_ddc)
 
@@ -445,9 +426,9 @@ class DDC(Tk):
         self.udp_send(data_to_send.encode())
         delay_ms(100)
         self.udp_send('L'.encode())
-        self.connect_ddc()
+        self.connect_ddc(status_check=False)
         delay_ms(10)
-        self.connect_ddc()
+        self.connect_ddc(status_check=False)
         self.is_graph = True
         self.REGS_LAST['302'] = conf[2]
         self.REGS_LAST['303'] = int(self.d303e.get())
@@ -599,7 +580,7 @@ class DDC(Tk):
             else:
                 return 0
 
-    def connect_ddc(self) -> None:
+    def connect_ddc(self, status_check=True) -> None:
         if not self.is_con:
             self.UDP_server_soc = socket.socket(family=socket.AF_INET,
                                                 type=socket.SOCK_DGRAM)
@@ -614,27 +595,28 @@ class DDC(Tk):
             except Exception:
                 messagebox.showerror('Error', 'Please insert valid IP/PORT')
                 return
-            self.udp_send('L'.encode())
-            delay_ms(50)
-            self.udp_send('L'.encode())
-            self.udp_send('Ct'.encode())  # Coder Trigger off
-            self.release_udp_buffer()
-            self.udp_send('c'.encode())
-            self.coder_status_callback()
-            if self.coder_start:
-                self.udp_send('CT'.encode())  # Coder Trigger on
-                self.coder_trigger = True
-                self.coder_trigger_btn['text'] = 'TRIGGER OFF'
-            self.con_btn['text'] = 'Disconnect'
-            self.send_btn['state'] = ACTIVE
+            if status_check:
+                self.udp_send('L'.encode())
+                delay_ms(50)
+                self.udp_send('L'.encode())
+                self.udp_send('Ct'.encode())  # Coder Trigger off
+                self.release_udp_buffer()
+                self.udp_send('c'.encode())
+                self.coder_status_callback()
+                if self.coder_start:
+                    self.udp_send('CT'.encode())  # Coder Trigger on
+                    self.coder_trigger = True
+                    self.coder_trigger_btn['text'] = 'TRIGGER OFF'
+                self.con_btn['text'] = 'Disconnect'
+                self.send_btn['state'] = ACTIVE
             self.is_con = True
         else:
-            self.UDP_server_soc.shutdown(socket.SHUT_RDWR)
-            self.UDP_server_soc.close()
-            self.con_btn['text'] = 'Connect'
-            self.send_btn['state'] = DISABLED
+            if status_check:
+                self.UDP_server_soc.shutdown(socket.SHUT_RDWR)
+                self.UDP_server_soc.close()
+                self.con_btn['text'] = 'Connect'
+                self.send_btn['state'] = DISABLED
             self.is_con = False
-            self.no_data_warn = False
 
     def getNCO(self, value: int) -> int:
         return round(2**32 * ((value * 1000) / self.fclock))
@@ -651,18 +633,28 @@ class DDC(Tk):
     def udp_receive(self, size):
         ready, _, _ = select.select([self.UDP_server_soc], [], [], 0.01)
         if ready:
-            bytesAddressPair = self.UDP_server_soc.recv(size)
-            return bytesAddressPair.hex()
+            msg = self.UDP_server_soc.recv(size).hex()
+            return self.check_header(msg)
+
+    def check_header(self, msg):
+        if msg[:8] == '41424142':
+            self.prev_header = '41424142'
+            return msg[8:]
+        elif msg[-8:] == '43444344':
+            self.prev_header = '43444344'
+            return msg[:-8]
+        else:
+            return msg
 
     def graph_nav_x_btn_command(self, _):
         try:
             val = int(self.graph_nav_x_e.get())
         except ValueError:
             self.bell()
-            val = 500
-        if val > 500:
+            val = self.graph_len_max
+        if val > self.graph_len_max:
             self.bell()
-            val = 500
+            val = self.graph_len_max
         elif val < 5:
             self.bell()
             val = 5

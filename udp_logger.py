@@ -78,20 +78,7 @@ if not args.show:
                     try:
                         msg = udp_receive()
                         if args.iq:
-                            i_data = [hex2int(msg[i+2:i+4] + msg[i:i+2])
-                                      for i in
-                                      range(8, len(msg)-8, 8)]
-                            q_data = [hex2int(msg[i+2:i+4] + msg[i:i+2])
-                                      for i in
-                                      range(12, len(msg)-8, 8)]
-                            i_data.insert(0, int(msg[1]))
-                            q_data.insert(0, int(msg[1]))
-                            writer.writerow(i_data)
-                            writer.writerow(q_data)
-                            size += (len(str(i_data).replace(' ', ''))) \
-                                / 1024 / 1024
-                            size += (len(str(q_data).replace(' ', '')))\
-                                / 1024 / 1024
+                            ...
                         else:
                             if prev == '43444344':
                                 data += [hex2int(msg[i+2:i+4] + msg[i:i+2])
