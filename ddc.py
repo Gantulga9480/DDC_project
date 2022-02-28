@@ -319,15 +319,20 @@ class DDC(Tk):
         self.mainloop()
 
     def receive_packet(self):
-        msg1 = self.udp_receive(self.BUFFER_SIZE)
-        if self.prev_header == '41424142':
-            msg2 = self.udp_receive(self.BUFFER_SIZE)
-            if self.prev_header == '43444344':
-                try:
-                    msg = msg1 + msg2
-                    return msg
-                except Exception:
-                    pass
+        if self.pmod_var.get():
+            msg1 = self.udp_receive(self.BUFFER_SIZE)
+            if self.prev_header == '41424142':
+                msg2 = self.udp_receive(self.BUFFER_SIZE)
+                if self.prev_header == '43444344':
+                    try:
+                        msg = msg1 + msg2
+                        return msg
+                    except Exception:
+                        pass
+        else:
+            msg1 = self.udp_receive(self.BUFFER_SIZE)
+            if self.prev_header == '41424142':
+                return msg1
 
     def draw_ddc(self):
         if self.is_con and self.is_graph:
