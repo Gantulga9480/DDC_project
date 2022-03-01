@@ -247,21 +247,80 @@ class DDC(Tk):
         self.coder_power = False
         self.coder_start = False
         self.coder_trigger = False
+        self.channels = ['Channel 1', 'Channel 2']
+        self.channels_var = StringVar()
+        self.freqs = ['150', '151', '152', '153', '154', '155', '156', '157',
+                      '158', '159', '160', '161', '162', '163', '164', '165',
+                      '166', '167', '168', '169', '170']
+        self.freqs_var = StringVar()
+        self.chs = ['1', '2', '3', '4', '5', '6', '7', '8']
+        self.ch1_var = StringVar()
+        self.ch2_var = StringVar()
 
-        self.coder_frame = ttk.Frame(self)
-        self.coder_power_btn = ttk.Button(self.coder_frame,
+        style = ttk.Style()
+        style.configure('TLabelframe', background='SystemWindow')
+        style.configure('TLabelframe.Label', background='SystemWindow')
+
+        self.coder_ch_l = ttk.Label(self, text='CHANNEL')
+        self.coder_ch_l.grid(row=1, column=3, sticky=W)
+        self.coder_code_ch = ttk.Combobox(self,
+                                          value=self.channels,
+                                          textvariable=self.channels_var)
+        self.coder_code_ch.current(0)
+        self.coder_code_ch.config(state="readonly", width=15)
+        self.coder_code_ch.bind("<<ComboboxSelected>>")
+        self.coder_code_ch.grid(row=1, column=4)
+        self.coder_ch_f = ttk.Label(self, text='FREQUENCY')
+        self.coder_ch_f.grid(row=5, column=3, sticky=W)
+        self.coder_code_fq = ttk.Combobox(self,
+                                          value=self.freqs,
+                                          textvariable=self.freqs_var)
+        self.coder_code_fq.current(0)
+        self.coder_code_fq.config(state="readonly", width=15)
+        self.coder_code_fq.bind("<<ComboboxSelected>>")
+        self.coder_code_fq.grid(row=5, column=4)
+        self.coder_code_fq_btn = ttk.Button(self, text="Set frequency",
+                                            command=self.coder_set_freq_cmd)
+        self.coder_code_fq_btn.grid(row=6, column=3, columnspan=2)
+
+        self.coder_ch_ch1_l = ttk.Label(self, text='ENTRY 1')
+        self.coder_ch_ch1_l.grid(row=10, column=3, sticky=W)
+        self.coder_code1 = ttk.Combobox(self,
+                                        value=self.chs,
+                                        textvariable=self.ch1_var)
+        self.coder_code1.current(0)
+        self.coder_code1.config(state="readonly", width=15)
+        self.coder_code1.bind("<<ComboboxSelected>>")
+        self.coder_code1.grid(row=10, column=4)
+
+        self.coder_ch_ch2_l = ttk.Label(self, text='ENTRY 2')
+        self.coder_ch_ch2_l.grid(row=11, column=3, sticky=W)
+        self.coder_code2 = ttk.Combobox(self,
+                                        value=self.chs,
+                                        textvariable=self.ch2_var)
+        self.coder_code2.current(0)
+        self.coder_code2.config(state="readonly", width=15)
+        self.coder_code2.bind("<<ComboboxSelected>>")
+        self.coder_code2.grid(row=11, column=4)
+        self.coder_freq_btn = ttk.Button(self, text="Set channel",
+                                         command=self.coder_set_channel_cmd)
+        self.coder_freq_btn.grid(row=12, column=3, columnspan=2)
+
+        self.coder_btn_frame = ttk.Frame(self)
+        self.coder_btn_frame.grid(row=16, column=3, columnspan=2)
+        self.coder_power_btn = ttk.Button(self.coder_btn_frame,
                                           text='POWER ON',
                                           command=self.coder_power_btn_cmd)
-        self.coder_start_btn = ttk.Button(self.coder_frame,
+        self.coder_start_btn = ttk.Button(self.coder_btn_frame,
                                           text='START',
                                           command=self.coder_start_btn_cmd)
-        self.coder_trigger_btn = ttk.Button(self.coder_frame,
+        self.coder_trigger_btn = ttk.Button(self.coder_btn_frame,
                                             text='TRIGGER ON',
                                             command=self.coder_trigger_btn_cmd)
-        self.coder_frame.grid(row=0, column=3, rowspan=17)
+
         self.coder_power_btn.grid(row=0, column=0)
-        self.coder_start_btn.grid(row=1, column=0)
-        self.coder_trigger_btn.grid(row=2, column=0)
+        self.coder_start_btn.grid(row=0, column=1)
+        self.coder_trigger_btn.grid(row=0, column=2)
 
         # ---------------------------------------------------------------------
         self.pcport_e.insert(END, '10')
@@ -317,22 +376,6 @@ class DDC(Tk):
 
         self.draw_ddc()
         self.mainloop()
-
-    def receive_packet(self):
-        if self.pmod_var.get():
-            msg1 = self.udp_receive(self.BUFFER_SIZE)
-            if self.prev_header == '41424142':
-                msg2 = self.udp_receive(self.BUFFER_SIZE)
-                if self.prev_header == '43444344':
-                    try:
-                        msg = msg1 + msg2
-                        return msg
-                    except Exception:
-                        pass
-        else:
-            msg1 = self.udp_receive(self.BUFFER_SIZE)
-            if self.prev_header == '41424142':
-                return msg1
 
     def draw_ddc(self):
         if self.is_con and self.is_graph:
@@ -448,15 +491,6 @@ class DDC(Tk):
         self.REGS_LAST['30C'] = conf[12]
         with open('conf.json', 'w') as file:
             json.dump(self.REGS_LAST, file)
-
-    def setDDCFs(self):
-        try:
-            clk = int(self.ddcClock_e.get()) * 1_000_000
-            if clk:
-                self.fclock = clk
-        except ValueError:
-            messagebox.showerror('Error', 'Enter valid DDC Fc value in MHz')
-            raise ValueError
 
     def checkInput(self, inpt: str, reg: str):
         if reg == '300':
@@ -606,7 +640,7 @@ class DDC(Tk):
                 self.udp_send('L'.encode())
                 self.udp_send('Ct'.encode())  # Coder Trigger off
                 self.release_udp_buffer()
-                self.udp_send('c'.encode())
+                self.udp_send('Cc'.encode())
                 self.coder_status_callback()
                 if self.coder_start:
                     self.udp_send('CT'.encode())  # Coder Trigger on
@@ -622,9 +656,6 @@ class DDC(Tk):
                 self.con_btn['text'] = 'Connect'
                 self.send_btn['state'] = DISABLED
             self.is_con = False
-
-    def getNCO(self, value: int) -> int:
-        return round(2**32 * ((value * 1000) / self.fclock))
 
     def udp_send(self, data: bytes) -> None:
         try:
@@ -651,60 +682,65 @@ class DDC(Tk):
         else:
             return msg
 
-    def graph_nav_x_btn_command(self, _):
-        try:
-            val = int(self.graph_nav_x_e.get())
-        except ValueError:
-            self.bell()
-            val = self.graph_len_max
-        if val > self.graph_len_max:
-            self.bell()
-            val = self.graph_len_max
-        elif val < 5:
-            self.bell()
-            val = 5
-        self.graph_len = val
-
-    def graph_nav_y_btn_command(self, _):
-        try:
-            val = int(self.graph_nav_y_e.get())
-        except ValueError:
-            self.bell()
-            val = 35000
-        if val > 35000:
-            self.bell()
-            val = 35000
-        elif val < 10:
-            self.bell()
-            val = 10
-        self.graph_scale = val
-
-    def graph_btn_command(self):
-        self.is_fft = not self.is_fft
-        if self.is_fft:
-            self.graph_btn['text'] = 'RAW'
+    def receive_packet(self):
+        if self.pmod_var.get():
+            msg1 = self.udp_receive(self.BUFFER_SIZE)
+            if self.prev_header == '41424142':
+                msg2 = self.udp_receive(self.BUFFER_SIZE)
+                if self.prev_header == '43444344':
+                    try:
+                        msg = msg1 + msg2
+                        return msg
+                    except Exception:
+                        pass
         else:
-            self.graph_btn['text'] = 'FFT'
+            msg1 = self.udp_receive(self.BUFFER_SIZE)
+            if self.prev_header == '41424142':
+                return msg1
 
-    def pmod_c_command(self):
-        self.udp_send('L'.encode())
-        self.udp_send(f'P{int(self.pmod_var.get())}'.encode())
-        delay_ms(100)
-        self.udp_send('L'.encode())
-        self.connect_ddc()
-        delay_ms(10)
-        self.connect_ddc()
+    # ------------------------------------------------------- COMMAND CALLBACKS
 
-    def throw_warning(self, msg):
-        messagebox.showwarning('Warning', msg)
+    def coder_set_freq_cmd(self):
+        if not self.coder_trigger and self.coder_start:
+            if self.udp_send('L'.encode()):
+                send_data = 'CF'
+                ch = self.channels_var.get()
+                if ch == self.channels[0]:
+                    ind = str(self.freqs.index(self.freqs_var.get())).zfill(2)
+                    send_data += '1' + ind
+                elif ch == self.channels[1]:
+                    ind = str(self.freqs.index(self.freqs_var.get())
+                              + 21).zfill(2)
+                    send_data += '2' + ind
+                self.udp_send(send_data.encode())
+                print(send_data)
+                self.udp_send('L'.encode())
+        else:
+            if not self.coder_start:
+                self.throw_error('Coder not started!')
+            else:
+                self.throw_error('Trigger mode ON!')
 
-    @staticmethod
-    def hex2int(hexval):
-        bits = 16
-        val = int(hexval, 16)
-        if val & (1 << (bits-1)):
-            val -= 1 << bits
-        return val
+    def coder_set_channel_cmd(self):
+        if not self.coder_trigger and self.coder_start:
+            if self.udp_send('L'.encode()):
+                send_data = 'CC'
+                ch = self.channels_var.get()
+                f1 = int(self.ch1_var.get())
+                f2 = int(self.ch2_var.get())
+                index = 0
+                if ch == self.channels[1]:
+                    index += 64
+                index += ((f1-1)*8 + (f2-1))
+                send_data += str(index).zfill(4)
+                print(send_data)
+                self.udp_send(send_data.encode())
+                self.udp_send('L'.encode())
+        else:
+            if not self.coder_start:
+                self.throw_error('Coder not started!')
+            else:
+                self.throw_error('Trigger mode ON!')
 
     def coder_power_btn_cmd(self):
         if self.udp_send('L'.encode()):
@@ -770,11 +806,85 @@ class DDC(Tk):
                     self.coder_trigger_btn['text'] = 'TRIGGER OFF'
                 break
 
+    def pmod_c_command(self):
+        self.udp_send('L'.encode())
+        self.udp_send(f'P{int(self.pmod_var.get())}'.encode())
+        delay_ms(100)
+        self.udp_send('L'.encode())
+        self.connect_ddc()
+        delay_ms(10)
+        self.connect_ddc()
+
+    def graph_nav_x_btn_command(self, _):
+        try:
+            val = int(self.graph_nav_x_e.get())
+        except ValueError:
+            self.bell()
+            val = self.graph_len_max
+        if val > self.graph_len_max:
+            self.bell()
+            val = self.graph_len_max
+        elif val < 5:
+            self.bell()
+            val = 5
+        self.graph_len = val
+
+    def graph_nav_y_btn_command(self, _):
+        try:
+            val = int(self.graph_nav_y_e.get())
+        except ValueError:
+            self.bell()
+            val = 35000
+        if val > 35000:
+            self.bell()
+            val = 35000
+        elif val < 10:
+            self.bell()
+            val = 10
+        self.graph_scale = val
+
+    def graph_btn_command(self):
+        self.is_fft = not self.is_fft
+        if self.is_fft:
+            self.graph_btn['text'] = 'RAW'
+        else:
+            self.graph_btn['text'] = 'FFT'
+
+    # -------------------------------------------------------- HELPER FUNCTIONS
+
     def release_udp_buffer(self):
         while True:
             res = self.udp_receive(self.BUFFER_SIZE)
             if res is None:
                 return
+
+    def getNCO(self, value: int) -> int:
+        return round(2**32 * ((value * 1000) / self.fclock))
+
+    def setDDCFs(self):
+        try:
+            clk = int(self.ddcClock_e.get()) * 1_000_000
+            if clk:
+                self.fclock = clk
+        except ValueError:
+            self.throw_error('Enter valid DDC Fc value in MHz')
+            raise ValueError
+
+    @staticmethod
+    def hex2int(hexval):
+        bits = 16
+        val = int(hexval, 16)
+        if val & (1 << (bits-1)):
+            val -= 1 << bits
+        return val
+
+    @staticmethod
+    def throw_warning(msg):
+        messagebox.showwarning('Warning', msg)
+
+    @staticmethod
+    def throw_error(msg):
+        messagebox.showerror('Error', msg)
 
 
 DDC()

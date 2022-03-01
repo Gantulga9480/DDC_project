@@ -3,6 +3,7 @@ import select
 import csv
 import os
 import argparse
+import sys
 from shutil import rmtree
 
 parser = argparse.ArgumentParser()
@@ -74,11 +75,10 @@ if not args.show:
                 packet_count = 0
                 print(f'FILE {i+1}')
                 while packet_count < P_MOD_PACKET_COUNT:
-                    packet_count += 1
                     try:
                         msg = udp_receive()
                         if args.iq:
-                            ...
+                            raise NotImplementedError
                         else:
                             if prev == '43444344':
                                 data += [hex2int(msg[i+2:i+4] + msg[i:i+2])
@@ -87,6 +87,7 @@ if not args.show:
                                 writer.writerow(data)
                                 size += (len(str(data).replace(' ', ''))) \
                                     / 1024 / 1024
+                                packet_count += 1
                             elif prev == '41424142':
                                 data = [hex2int(msg[i+2:i+4] + msg[i:i+2])
                                         for i in
@@ -97,7 +98,7 @@ if not args.show:
                         except FileNotFoundError:
                             pass
                         print(e)
-                        quit()
+                        sys.exit()
         except KeyboardInterrupt:
             break
     print(f'TOTAL FILES CREATED : {i+1}')
