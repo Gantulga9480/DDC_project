@@ -635,17 +635,17 @@ class DDC(Tk):
                 messagebox.showerror('Error', 'Please insert valid IP/PORT')
                 return
             if status_check:
-                self.udp_send('L'.encode())
-                delay_ms(50)
-                self.udp_send('L'.encode())
-                self.udp_send('Ct'.encode())  # Coder Trigger off
-                self.release_udp_buffer()
-                self.udp_send('Cc'.encode())
-                self.coder_status_callback()
-                if self.coder_start:
-                    self.udp_send('CT'.encode())  # Coder Trigger on
-                    self.coder_trigger = True
-                    self.coder_trigger_btn['text'] = 'TRIGGER OFF'
+                # self.udp_send('L'.encode())
+                # delay_ms(50)
+                # self.udp_send('L'.encode())
+                # self.udp_send('Ct'.encode())  # Coder Trigger off
+                # self.release_udp_buffer()
+                # self.udp_send('Cc'.encode())
+                # self.coder_status_callback()
+                # if self.coder_start:
+                #     self.udp_send('CT'.encode())  # Coder Trigger on
+                #     self.coder_trigger = True
+                #     self.coder_trigger_btn['text'] = 'TRIGGER OFF'
                 self.con_btn['text'] = 'Disconnect'
                 self.send_btn['state'] = ACTIVE
             self.is_con = True
