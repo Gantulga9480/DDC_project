@@ -474,9 +474,9 @@ class DDC(Tk):
         self.udp_send(data_to_send.encode())
         delay_ms(100)
         self.udp_send('L'.encode())
-        self.connect_ddc(status_check=False)
+        self.connect_ddc()
         delay_ms(10)
-        self.connect_ddc(status_check=False)
+        self.connect_ddc()
         self.is_graph = True
         self.REGS_LAST['302'] = conf[2]
         self.REGS_LAST['303'] = int(self.d303e.get())
@@ -619,7 +619,7 @@ class DDC(Tk):
             else:
                 return 0
 
-    def connect_ddc(self, status_check=True) -> None:
+    def connect_ddc(self) -> None:
         if not self.is_con:
             self.UDP_server_soc = socket.socket(family=socket.AF_INET,
                                                 type=socket.SOCK_DGRAM)
@@ -634,27 +634,14 @@ class DDC(Tk):
             except Exception:
                 messagebox.showerror('Error', 'Please insert valid IP/PORT')
                 return
-            if status_check:
-                # self.udp_send('L'.encode())
-                # delay_ms(50)
-                # self.udp_send('L'.encode())
-                # self.udp_send('Ct'.encode())  # Coder Trigger off
-                # self.release_udp_buffer()
-                # self.udp_send('Cc'.encode())
-                # self.coder_status_callback()
-                # if self.coder_start:
-                #     self.udp_send('CT'.encode())  # Coder Trigger on
-                #     self.coder_trigger = True
-                #     self.coder_trigger_btn['text'] = 'TRIGGER OFF'
-                self.con_btn['text'] = 'Disconnect'
-                self.send_btn['state'] = ACTIVE
+            self.con_btn['text'] = 'Disconnect'
+            self.send_btn['state'] = ACTIVE
             self.is_con = True
         else:
-            if status_check:
-                self.UDP_server_soc.shutdown(socket.SHUT_RDWR)
-                self.UDP_server_soc.close()
-                self.con_btn['text'] = 'Connect'
-                self.send_btn['state'] = DISABLED
+            self.UDP_server_soc.shutdown(socket.SHUT_RDWR)
+            self.UDP_server_soc.close()
+            self.con_btn['text'] = 'Connect'
+            self.send_btn['state'] = DISABLED
             self.is_con = False
 
     def udp_send(self, data: bytes) -> None:
