@@ -4,10 +4,10 @@ from tkinter import *
 from tkinter import ttk, messagebox
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib import pyplot as plt
-from DDC_REGS import *
 import select
 import json
 from low_level_delay import delay_ms
+from DDC_REGS import *
 
 
 class DDC(Tk):
@@ -373,21 +373,28 @@ class DDC(Tk):
         self.fft_last_scale = 5000
 
         self.prev_header = ''
+        self.ddc1_data = None
+        self.ddc2_data = None
 
         self.draw_ddc()
         self.mainloop()
 
     def draw_ddc(self):
         if self.is_con and self.is_graph:
-            msg = self.receive_packet()
+            msg, num = self.receive_packet()
             if msg:
                 self.graph.cla()
-                i_data = [self.hex2int(msg[i+2:i+4] + msg[i:i+2])
-                          for i in
-                          range(0, len(msg), 4)]
+                if num == 1:
+                    self.ddc1_data = [self.hex2int(msg[i+2:i+4] + msg[i:i+2])
+                                      for i in
+                                      range(0, len(msg), 4)]
+                elif num == 2:
+                    self.ddc2_data = [self.hex2int(msg[i+2:i+4] + msg[i:i+2])
+                                      for i in
+                                      range(0, len(msg), 4)]
                 if self.is_fft:
-                    i_fft = np.fft.rfft(np.array(i_data))
-                    I_fft = np.abs(i_fft/len(i_data))
+                    i_fft = np.fft.rfft(np.array(self.ddc1_data))
+                    I_fft = np.abs(i_fft/len(self.ddc1_data))
                     imax_f = np.argmax(I_fft)
                     I_f = np.linspace(0, self.fsamp/2, len(I_fft))
                     max_val = I_fft[imax_f]
@@ -411,12 +418,20 @@ class DDC(Tk):
                     plt.ylim(0, (self.fft_last_scale+1))
                     self.graph.legend(['I', 'Q'], loc='lower right')
                 else:
-                    imx = max(i_data)
-                    self.graph.annotate(f'I - {imx}',
+                    ddc1_max = max(self.ddc1_data) if self.ddc1_data else 0
+                    ddc2_max = max(self.ddc1_data) if self.ddc2_data else 0
+                    self.graph.annotate(f'1 - {ddc1_max}',
                                         xy=(0, 0),
                                         xytext=(self.graph_len//10*6,
                                                 self.graph_scale))
-                    self.graph.plot(i_data, 'r')
+                    self.graph.annotate(f'2 - {ddc1_max}',
+                                        xy=(0, 0),
+                                        xytext=(self.graph_len//10*6,
+                                                self.graph_scale))
+                    if self.ddc1_data:
+                        self.graph.plot(self.ddc1_data, 'r')
+                    if self.ddc2_data:
+                        self.graph.plot(self.ddc2_data, 'b')
                     plt.ylim(-self.graph_scale, self.graph_scale)
                     plt.xlim(0, self.graph_len)
                     self.graph.legend(['I'], loc='upper right')
@@ -660,11 +675,11 @@ class DDC(Tk):
             return self.check_header(msg)
 
     def check_header(self, msg):
-        if msg[:8] == '41424142':
-            self.prev_header = '41424142'
+        if msg[:8] == '41424142' or msg[:8] == '42414241':
+            self.prev_header = msg[:8]
             return msg[8:]
-        elif msg[-8:] == '43444344':
-            self.prev_header = '43444344'
+        elif msg[-8:] == '43444344' or msg[-8:] == '44434443':
+            self.prev_header = msg[-8:]
             return msg[:-8]
         else:
             return msg
@@ -676,14 +691,22 @@ class DDC(Tk):
                 msg2 = self.udp_receive(self.BUFFER_SIZE)
                 if self.prev_header == '43444344':
                     try:
-                        msg = msg1 + msg2
-                        return msg
+                        return msg1 + msg2, 1
+                    except Exception:
+                        pass
+            elif self.prev_header == '42414241':
+                msg2 = self.udp_receive(self.BUFFER_SIZE)
+                if self.prev_header == '44434443':
+                    try:
+                        return msg1 + msg2, 2
                     except Exception:
                         pass
         else:
             msg1 = self.udp_receive(self.BUFFER_SIZE)
             if self.prev_header == '41424142':
-                return msg1
+                return msg1, 1
+            if self.prev_header == '42414241':
+                return msg1, 2
 
     # ------------------------------------------------------- COMMAND CALLBACKS
 

@@ -6,3 +6,4 @@ conf.json
 *.rar
 *.png
 test.py
+dist
