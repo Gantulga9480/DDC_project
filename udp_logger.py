@@ -22,22 +22,30 @@ print("UDP Socket up and listening")
 
 P_MOD_PACKET_COUNT = args.rows if args.rows else 10000
 TOTAL_FILES = args.files if args.files else 1
-prev = 0
+ddc1_header = None
+ddc2_header = None
 size = 0
 data = ''
 
 
 def check_header(msg):
-    global prev
+    global ddc1_header, ddc2_header
     if msg[:8] == '41424142':
-        if prev == '41424142':
+        if ddc1_header == '41424142':
             print('LOSS FOOTER')
-        prev = '41424142'
-    else:
-        if msg[-8:] == '43444344':
-            if prev == '43444344':
-                print('LOSS HEADER')
-        prev = '43444344'
+        ddc1_header = '41424142'
+    elif msg[:8] == '42414241':
+        if ddc2_header == '42414241':
+            print('LOSS FOOTER')
+        ddc2_header = '42414241'
+    elif msg[-8:] == '43444344':
+        if ddc1_header == '43444344':
+            print('LOSS HEADER')
+        ddc1_header = '43444344'
+    elif msg[-8:] == '44434443':
+        if ddc2_header == '44434443':
+            print('LOSS HEADER')
+        ddc2_header = '44434443'
 
 
 def hex2int(hexval):
@@ -49,15 +57,16 @@ def hex2int(hexval):
 
 
 def udp_receive():
-    ready, _, _ = select.select([UDPServerSocket], [], [], 0.05)
+    ready, _, _ = select.select([UDPServerSocket], [], [], 0.01)
     if ready:
-        msg = UDPServerSocket.recv(1008).hex()
+        msg = UDPServerSocket.recv(1024).hex()
         check_header(msg)
         return msg
     return
 
 
 if not args.show:
+    raise NotImplementedError
     try:
         try:
             rmtree('DDC_DATA')
@@ -66,43 +75,6 @@ if not args.show:
         os.mkdir('DDC_DATA')
     except FileExistsError:
         print('Overwriting prev')
-
-if not args.show:
-    for i in range(TOTAL_FILES):
-        try:
-            with open(f'DDC_DATA/Data_{i+1}.csv', "w+", newline='') as _file:
-                writer = csv.writer(_file)
-                packet_count = 0
-                print(f'FILE {i+1}')
-                while packet_count < P_MOD_PACKET_COUNT:
-                    try:
-                        msg = udp_receive()
-                        if args.iq:
-                            raise NotImplementedError
-                        else:
-                            if prev == '43444344':
-                                data += [hex2int(msg[i+2:i+4] + msg[i:i+2])
-                                         for i in
-                                         range(0, len(msg)-8, 4)]
-                                writer.writerow(data)
-                                size += (len(str(data).replace(' ', ''))) \
-                                    / 1024 / 1024
-                                packet_count += 1
-                            elif prev == '41424142':
-                                data = [hex2int(msg[i+2:i+4] + msg[i:i+2])
-                                        for i in
-                                        range(8, len(msg), 4)]
-                    except Exception as e:
-                        try:
-                            rmtree('DDC_DATA')
-                        except FileNotFoundError:
-                            pass
-                        print(e)
-                        sys.exit()
-        except KeyboardInterrupt:
-            break
-    print(f'TOTAL FILES CREATED : {i+1}')
-    print(f'TOTAL DATA CAPTURED : {round(size, 2)} MB')
 else:
     while True:
         try:

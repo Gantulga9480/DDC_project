@@ -8,6 +8,8 @@ import select
 import json
 from low_level_delay import delay_ms
 from DDC_REGS import *
+from threading import Thread
+import time
 
 
 class DDC(Tk):
@@ -214,10 +216,10 @@ class DDC(Tk):
 
         # ---------------------------------------------------------------FIGURE
         self.fig = plt.figure()
-        self.graph = plt.subplot()
+        self.ddc1_graph = plt.subplot(2, 1, 1)
+        self.ddc2_graph = plt.subplot(2, 1, 2)
         self.canvas = FigureCanvasTkAgg(self.fig, master=self)
         self.canvas.draw()
-
         self.canvas.get_tk_widget().grid(row=1, column=2,
                                          rowspan=15)
 
@@ -370,71 +372,123 @@ class DDC(Tk):
         self.graph_len = 1000
         self.graph_len_max = self.graph_len
         self.graph_scale = 35000
-        self.fft_last_scale = 5000
+        self.fft1_last_scale = 5000
+        self.fft2_last_scale = 5000
 
         self.prev_header = ''
+        self.ddc1_stream_data = ''
+        self.ddc2_stream_data = ''
         self.ddc1_data = None
         self.ddc2_data = None
+
+        self.udp_stream = True
+
+        self.udp_thread = Thread(target=self.stream_ddc_data)
+        self.udp_thread.start()
 
         self.draw_ddc()
         self.mainloop()
 
+        self.udp_stream = False
+        self.udp_thread.join()
+
+    def stream_ddc_data(self):
+        time.sleep(1)
+        while self.udp_stream:
+            if self.is_con:
+                data = self.udp_receive(self.BUFFER_SIZE)
+                if data:
+                    if data[:8] == '41424142':
+                        if not self.ddc1_stream_data:
+                            self.ddc1_stream_data = data[8:]
+                        else:
+                            if not self.pmod_var.get():
+                                self.ddc1_data = [self.hex2int(self.ddc1_stream_data[i+2:i+4] + self.ddc1_stream_data[i:i+2])
+                                                  for i in
+                                                  range(12, len(self.ddc1_stream_data), 4)]
+                            self.ddc1_stream_data = ''
+                    elif data[:8] == '42414241':
+                        if not self.ddc2_stream_data:
+                            self.ddc2_stream_data = data[8:]
+                        else:
+                            if not self.pmod_var.get():
+                                self.ddc2_data = [self.hex2int(self.ddc2_stream_data[i+2:i+4] + self.ddc2_stream_data[i:i+2])
+                                                  for i in
+                                                  range(12, len(self.ddc2_stream_data), 4)]
+                                time.sleep(0.01)
+                            self.ddc2_stream_data = ''
+                    elif data[-8:] == '43444344':
+                        if self.ddc1_stream_data:
+                            self.ddc1_stream_data += data[:-8]
+                            self.ddc1_data = [self.hex2int(self.ddc1_stream_data[i+2:i+4] + self.ddc1_stream_data[i:i+2])
+                                              for i in
+                                              range(12, len(self.ddc1_stream_data), 4)]
+                        self.ddc1_stream_data = ''
+                    elif data[-8:] == '44434443':
+                        if self.ddc2_stream_data:
+                            self.ddc2_stream_data += data[:-8]
+                            self.ddc2_data = [self.hex2int(self.ddc2_stream_data[i+2:i+4] + self.ddc2_stream_data[i:i+2])
+                                              for i in
+                                              range(12, len(self.ddc2_stream_data), 4)]
+                        self.ddc2_stream_data = ''
+                        time.sleep(0.01)
+            else:
+                time.sleep(1)
+
     def draw_ddc(self):
         if self.is_con and self.is_graph:
-            msg, num = self.receive_packet()
-            if msg:
-                self.graph.cla()
-                if num == 1:
-                    self.ddc1_data = [self.hex2int(msg[i+2:i+4] + msg[i:i+2])
-                                      for i in
-                                      range(0, len(msg), 4)]
-                elif num == 2:
-                    self.ddc2_data = [self.hex2int(msg[i+2:i+4] + msg[i:i+2])
-                                      for i in
-                                      range(0, len(msg), 4)]
-                if self.is_fft:
+            if not self.is_fft:
+                if self.ddc1_data:
+                    self.ddc1_graph.cla()
+                    self.ddc1_graph.plot(self.ddc1_data)
+                    self.ddc1_graph.set_ylim([-self.graph_scale, self.graph_scale])
+                    self.ddc1_graph.set_xlim([0, self.graph_len])
+                    self.ddc1_graph.legend(['DDC 1'], loc='upper right')
+                if self.ddc2_data:
+                    self.ddc2_graph.cla()
+                    self.ddc2_graph.plot(self.ddc2_data)
+                    self.ddc2_graph.set_ylim([-self.graph_scale, self.graph_scale])
+                    self.ddc2_graph.set_xlim([0, self.graph_len])
+                    self.ddc2_graph.legend(['DDC 2'], loc='upper right')
+            else:
+                if self.ddc1_data:
+                    self.ddc1_graph.cla()
                     i_fft = np.fft.rfft(np.array(self.ddc1_data))
                     I_fft = np.abs(i_fft/len(self.ddc1_data))
                     imax_f = np.argmax(I_fft)
                     I_f = np.linspace(0, self.fsamp/2, len(I_fft))
                     max_val = I_fft[imax_f]
-                    fi = round(np.round((self.fsamp/2)/len(I_f)*imax_f)
-                               / 1000, 2)
-                    if self.fft_last_scale < max_val:
-                        self.fft_last_scale = max_val+1000
+                    fi = round(np.round((self.fsamp/2)/len(I_f)*imax_f) / 1000, 2)
+                    if self.fft1_last_scale < max_val:
+                        self.fft1_last_scale = max_val+1000
                     else:
-                        if self.fft_last_scale / (max_val + 1) > 2:
-                            while True:
-                                ratio = self.fft_last_scale / (max_val + 1)
-                                if ratio > 2:
-                                    self.fft_last_scale //= 2
-                                else:
-                                    break
-                    self.graph.annotate(f'I - {fi} KHz',
-                                        xy=(0, 0),
-                                        xytext=(np.max(I_f)//2,
-                                                self.fft_last_scale))
-                    self.graph.plot(I_f, I_fft, 'r')
-                    plt.ylim(0, (self.fft_last_scale+1))
-                    self.graph.legend(['I', 'Q'], loc='lower right')
-                else:
-                    ddc1_max = max(self.ddc1_data) if self.ddc1_data else 0
-                    ddc2_max = max(self.ddc1_data) if self.ddc2_data else 0
-                    self.graph.annotate(f'1 - {ddc1_max}',
-                                        xy=(0, 0),
-                                        xytext=(self.graph_len//10*6,
-                                                self.graph_scale))
-                    self.graph.annotate(f'2 - {ddc1_max}',
-                                        xy=(0, 0),
-                                        xytext=(self.graph_len//10*6,
-                                                self.graph_scale))
-                    if self.ddc1_data:
-                        self.graph.plot(self.ddc1_data, 'r')
-                    if self.ddc2_data:
-                        self.graph.plot(self.ddc2_data, 'b')
-                    plt.ylim(-self.graph_scale, self.graph_scale)
-                    plt.xlim(0, self.graph_len)
-                    self.graph.legend(['I'], loc='upper right')
+                        while self.fft1_last_scale / (max_val + 1) > 2:
+                            self.fft1_last_scale //= 2
+                    self.ddc1_graph.annotate(f'{fi} KHz',
+                                             xy=(0, 0),
+                                             xytext=(0, self.fft1_last_scale))
+                    self.ddc1_graph.plot(I_f, I_fft, 'r')
+                    self.ddc1_graph.set_ylim(0, (self.fft1_last_scale+1))
+                    self.ddc1_graph.legend(['DDC 1'], loc='upper right')
+                if self.ddc2_data:
+                    self.ddc2_graph.cla()
+                    i_fft = np.fft.rfft(np.array(self.ddc2_data))
+                    I_fft = np.abs(i_fft/len(self.ddc2_data))
+                    imax_f = np.argmax(I_fft)
+                    I_f = np.linspace(0, self.fsamp/2, len(I_fft))
+                    max_val = I_fft[imax_f]
+                    fi = round(np.round((self.fsamp/2)/len(I_f)*imax_f) / 1000, 2)
+                    if self.fft2_last_scale < max_val:
+                        self.fft2_last_scale = max_val+1000
+                    else:
+                        while self.fft2_last_scale / (max_val + 1) > 2:
+                            self.fft2_last_scale //= 2
+                    self.ddc2_graph.annotate(f'{fi} KHz',
+                                             xy=(0, 0),
+                                             xytext=(0, self.fft2_last_scale))
+                    self.ddc2_graph.plot(I_f, I_fft, 'r')
+                    self.ddc2_graph.set_ylim(0, (self.fft2_last_scale+1))
+                    self.ddc2_graph.legend(['DDC 2'], loc='upper right')
         self.canvas.draw()
         self.after(int(1), self.draw_ddc)
 
@@ -669,44 +723,15 @@ class DDC(Tk):
             return False
 
     def udp_receive(self, size):
-        ready, _, _ = select.select([self.UDP_server_soc], [], [], 0.01)
-        if ready:
-            msg = self.UDP_server_soc.recv(size).hex()
-            return self.check_header(msg)
-
-    def check_header(self, msg):
-        if msg[:8] == '41424142' or msg[:8] == '42414241':
-            self.prev_header = msg[:8]
-            return msg[8:]
-        elif msg[-8:] == '43444344' or msg[-8:] == '44434443':
-            self.prev_header = msg[-8:]
-            return msg[:-8]
-        else:
-            return msg
-
-    def receive_packet(self):
-        if self.pmod_var.get():
-            msg1 = self.udp_receive(self.BUFFER_SIZE)
-            if self.prev_header == '41424142':
-                msg2 = self.udp_receive(self.BUFFER_SIZE)
-                if self.prev_header == '43444344':
-                    try:
-                        return msg1 + msg2, 1
-                    except Exception:
-                        pass
-            elif self.prev_header == '42414241':
-                msg2 = self.udp_receive(self.BUFFER_SIZE)
-                if self.prev_header == '44434443':
-                    try:
-                        return msg1 + msg2, 2
-                    except Exception:
-                        pass
-        else:
-            msg1 = self.udp_receive(self.BUFFER_SIZE)
-            if self.prev_header == '41424142':
-                return msg1, 1
-            if self.prev_header == '42414241':
-                return msg1, 2
+        try:
+            ready, _, _ = select.select([self.UDP_server_soc], [], [], 0.01)
+            if ready:
+                try:
+                    return self.UDP_server_soc.recv(size).hex()
+                except OSError:
+                    return
+        except Exception:
+            return
 
     # ------------------------------------------------------- COMMAND CALLBACKS
 
