@@ -415,7 +415,7 @@ class DDC(Tk):
                                 self.ddc2_data = [self.hex2int(self.ddc2_stream_data[i+2:i+4] + self.ddc2_stream_data[i:i+2])
                                                   for i in
                                                   range(12, len(self.ddc2_stream_data), 4)]
-                                time.sleep(0.01)
+                                time.sleep(0.015)
                             self.ddc2_stream_data = ''
                     elif data[-8:] == '43444344':
                         if self.ddc1_stream_data:
@@ -431,7 +431,7 @@ class DDC(Tk):
                                               for i in
                                               range(12, len(self.ddc2_stream_data), 4)]
                         self.ddc2_stream_data = ''
-                        time.sleep(0.01)
+                        time.sleep(0.015)
             else:
                 time.sleep(1)
 
@@ -441,13 +441,15 @@ class DDC(Tk):
                 if self.ddc1_data:
                     self.ddc1_graph.cla()
                     self.ddc1_graph.plot(self.ddc1_data)
-                    self.ddc1_graph.set_ylim([-self.graph_scale, self.graph_scale])
+                    self.ddc1_graph.set_ylim([-self.graph_scale,
+                                              self.graph_scale])
                     self.ddc1_graph.set_xlim([0, self.graph_len])
                     self.ddc1_graph.legend(['DDC 1'], loc='upper right')
                 if self.ddc2_data:
                     self.ddc2_graph.cla()
                     self.ddc2_graph.plot(self.ddc2_data)
-                    self.ddc2_graph.set_ylim([-self.graph_scale, self.graph_scale])
+                    self.ddc2_graph.set_ylim([-self.graph_scale,
+                                              self.graph_scale])
                     self.ddc2_graph.set_xlim([0, self.graph_len])
                     self.ddc2_graph.legend(['DDC 2'], loc='upper right')
             else:
@@ -458,7 +460,8 @@ class DDC(Tk):
                     imax_f = np.argmax(I_fft)
                     I_f = np.linspace(0, self.fsamp/2, len(I_fft))
                     max_val = I_fft[imax_f]
-                    fi = round(np.round((self.fsamp/2)/len(I_f)*imax_f) / 1000, 2)
+                    fi = round(np.round((self.fsamp/2)/len(I_f)*imax_f) / 1000,
+                               2)
                     if self.fft1_last_scale < max_val:
                         self.fft1_last_scale = max_val+1000
                     else:
@@ -477,7 +480,8 @@ class DDC(Tk):
                     imax_f = np.argmax(I_fft)
                     I_f = np.linspace(0, self.fsamp/2, len(I_fft))
                     max_val = I_fft[imax_f]
-                    fi = round(np.round((self.fsamp/2)/len(I_f)*imax_f) / 1000, 2)
+                    fi = round(np.round((self.fsamp/2)/len(I_f)*imax_f) / 1000,
+                               2)
                     if self.fft2_last_scale < max_val:
                         self.fft2_last_scale = max_val+1000
                     else:
@@ -490,7 +494,7 @@ class DDC(Tk):
                     self.ddc2_graph.set_ylim(0, (self.fft2_last_scale+1))
                     self.ddc2_graph.legend(['DDC 2'], loc='upper right')
         self.canvas.draw()
-        self.after(int(1), self.draw_ddc)
+        self.after(10, self.draw_ddc)
 
     def read_btn_command(self) -> None:
         """ Depricated """
