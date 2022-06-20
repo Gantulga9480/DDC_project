@@ -91,7 +91,7 @@ if not args.show:
                             elif prev == '41424142':
                                 data = [hex2int(msg[i+2:i+4] + msg[i:i+2])
                                         for i in
-                                        range(8, len(msg), 4)]
+                                        range(12, len(msg), 4)]
                     except Exception as e:
                         try:
                             rmtree('DDC_DATA')
