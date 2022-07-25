@@ -246,83 +246,83 @@ class DDC(Tk):
         # self.btn.grid(row=17, column=2, ipadx=450)
 
         # ----------------------------------------------------------------CODER
-        self.coder_power = False
-        self.coder_start = False
-        self.coder_trigger = False
-        self.channels = ['Channel 1', 'Channel 2']
-        self.channels_var = StringVar()
-        self.freqs = ['150', '151', '152', '153', '154', '155', '156', '157',
-                      '158', '159', '160', '161', '162', '163', '164', '165',
-                      '166', '167', '168', '169', '170']
-        self.freqs_var = StringVar()
-        self.chs = ['1', '2', '3', '4', '5', '6', '7', '8']
-        self.ch1_var = StringVar()
-        self.ch2_var = StringVar()
+        # self.coder_power = False
+        # self.coder_start = False
+        # self.coder_trigger = False
+        # self.channels = ['Channel 1', 'Channel 2']
+        # self.channels_var = StringVar()
+        # self.freqs = ['150', '151', '152', '153', '154', '155', '156', '157',
+        #               '158', '159', '160', '161', '162', '163', '164', '165',
+        #               '166', '167', '168', '169', '170']
+        # self.freqs_var = StringVar()
+        # self.chs = ['1', '2', '3', '4', '5', '6', '7', '8']
+        # self.ch1_var = StringVar()
+        # self.ch2_var = StringVar()
 
-        style = ttk.Style()
-        style.configure('TLabelframe', background='SystemWindow')
-        style.configure('TLabelframe.Label', background='SystemWindow')
+        # style = ttk.Style()
+        # style.configure('TLabelframe', background='SystemWindow')
+        # style.configure('TLabelframe.Label', background='SystemWindow')
 
-        self.coder_ch_l = ttk.Label(self, text='CHANNEL')
-        self.coder_ch_l.grid(row=1, column=3, sticky=W)
-        self.coder_code_ch = ttk.Combobox(self,
-                                          value=self.channels,
-                                          textvariable=self.channels_var)
-        self.coder_code_ch.current(0)
-        self.coder_code_ch.config(state="readonly", width=15)
-        self.coder_code_ch.bind("<<ComboboxSelected>>")
-        self.coder_code_ch.grid(row=1, column=4)
-        self.coder_ch_f = ttk.Label(self, text='FREQUENCY')
-        self.coder_ch_f.grid(row=5, column=3, sticky=W)
-        self.coder_code_fq = ttk.Combobox(self,
-                                          value=self.freqs,
-                                          textvariable=self.freqs_var)
-        self.coder_code_fq.current(0)
-        self.coder_code_fq.config(state="readonly", width=15)
-        self.coder_code_fq.bind("<<ComboboxSelected>>")
-        self.coder_code_fq.grid(row=5, column=4)
-        self.coder_code_fq_btn = ttk.Button(self, text="Set frequency",
-                                            command=self.coder_set_freq_cmd)
-        self.coder_code_fq_btn.grid(row=6, column=3, columnspan=2)
+        # self.coder_ch_l = ttk.Label(self, text='CHANNEL')
+        # self.coder_ch_l.grid(row=1, column=3, sticky=W)
+        # self.coder_code_ch = ttk.Combobox(self,
+        #                                   value=self.channels,
+        #                                   textvariable=self.channels_var)
+        # self.coder_code_ch.current(0)
+        # self.coder_code_ch.config(state="readonly", width=15)
+        # self.coder_code_ch.bind("<<ComboboxSelected>>")
+        # self.coder_code_ch.grid(row=1, column=4)
+        # self.coder_ch_f = ttk.Label(self, text='FREQUENCY')
+        # self.coder_ch_f.grid(row=5, column=3, sticky=W)
+        # self.coder_code_fq = ttk.Combobox(self,
+        #                                   value=self.freqs,
+        #                                   textvariable=self.freqs_var)
+        # self.coder_code_fq.current(0)
+        # self.coder_code_fq.config(state="readonly", width=15)
+        # self.coder_code_fq.bind("<<ComboboxSelected>>")
+        # self.coder_code_fq.grid(row=5, column=4)
+        # self.coder_code_fq_btn = ttk.Button(self, text="Set frequency",
+        #                                     command=self.coder_set_freq_cmd)
+        # self.coder_code_fq_btn.grid(row=6, column=3, columnspan=2)
 
-        self.coder_ch_ch1_l = ttk.Label(self, text='ENTRY 1')
-        self.coder_ch_ch1_l.grid(row=10, column=3, sticky=W)
-        self.coder_code1 = ttk.Combobox(self,
-                                        value=self.chs,
-                                        textvariable=self.ch1_var)
-        self.coder_code1.current(0)
-        self.coder_code1.config(state="readonly", width=15)
-        self.coder_code1.bind("<<ComboboxSelected>>")
-        self.coder_code1.grid(row=10, column=4)
+        # self.coder_ch_ch1_l = ttk.Label(self, text='ENTRY 1')
+        # self.coder_ch_ch1_l.grid(row=10, column=3, sticky=W)
+        # self.coder_code1 = ttk.Combobox(self,
+        #                                 value=self.chs,
+        #                                 textvariable=self.ch1_var)
+        # self.coder_code1.current(0)
+        # self.coder_code1.config(state="readonly", width=15)
+        # self.coder_code1.bind("<<ComboboxSelected>>")
+        # self.coder_code1.grid(row=10, column=4)
 
-        self.coder_ch_ch2_l = ttk.Label(self, text='ENTRY 2')
-        self.coder_ch_ch2_l.grid(row=11, column=3, sticky=W)
-        self.coder_code2 = ttk.Combobox(self,
-                                        value=self.chs,
-                                        textvariable=self.ch2_var)
-        self.coder_code2.current(0)
-        self.coder_code2.config(state="readonly", width=15)
-        self.coder_code2.bind("<<ComboboxSelected>>")
-        self.coder_code2.grid(row=11, column=4)
-        self.coder_freq_btn = ttk.Button(self, text="Set channel",
-                                         command=self.coder_set_channel_cmd)
-        self.coder_freq_btn.grid(row=12, column=3, columnspan=2)
+        # self.coder_ch_ch2_l = ttk.Label(self, text='ENTRY 2')
+        # self.coder_ch_ch2_l.grid(row=11, column=3, sticky=W)
+        # self.coder_code2 = ttk.Combobox(self,
+        #                                 value=self.chs,
+        #                                 textvariable=self.ch2_var)
+        # self.coder_code2.current(0)
+        # self.coder_code2.config(state="readonly", width=15)
+        # self.coder_code2.bind("<<ComboboxSelected>>")
+        # self.coder_code2.grid(row=11, column=4)
+        # self.coder_freq_btn = ttk.Button(self, text="Set channel",
+        #                                  command=self.coder_set_channel_cmd)
+        # self.coder_freq_btn.grid(row=12, column=3, columnspan=2)
 
-        self.coder_btn_frame = ttk.Frame(self)
-        self.coder_btn_frame.grid(row=16, column=3, columnspan=2)
-        self.coder_power_btn = ttk.Button(self.coder_btn_frame,
-                                          text='POWER ON',
-                                          command=self.coder_power_btn_cmd)
-        self.coder_start_btn = ttk.Button(self.coder_btn_frame,
-                                          text='START',
-                                          command=self.coder_start_btn_cmd)
-        self.coder_trigger_btn = ttk.Button(self.coder_btn_frame,
-                                            text='TRIGGER ON',
-                                            command=self.coder_trigger_btn_cmd)
+        # self.coder_btn_frame = ttk.Frame(self)
+        # self.coder_btn_frame.grid(row=16, column=3, columnspan=2)
+        # self.coder_power_btn = ttk.Button(self.coder_btn_frame,
+        #                                   text='POWER ON',
+        #                                   command=self.coder_power_btn_cmd)
+        # self.coder_start_btn = ttk.Button(self.coder_btn_frame,
+        #                                   text='START',
+        #                                   command=self.coder_start_btn_cmd)
+        # self.coder_trigger_btn = ttk.Button(self.coder_btn_frame,
+        #                                     text='TRIGGER ON',
+        #                                     command=self.coder_trigger_btn_cmd)
 
-        self.coder_power_btn.grid(row=0, column=0)
-        self.coder_start_btn.grid(row=0, column=1)
-        self.coder_trigger_btn.grid(row=0, column=2)
+        # self.coder_power_btn.grid(row=0, column=0)
+        # self.coder_start_btn.grid(row=0, column=1)
+        # self.coder_trigger_btn.grid(row=0, column=2)
 
         # ---------------------------------------------------------------------
         self.pcport_e.insert(END, '10')
