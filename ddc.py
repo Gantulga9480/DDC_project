@@ -143,7 +143,7 @@ class DDC(Tk):
         self.pcip_style = ttk.Style(self.pcip_l)
         self.pcip_style.configure('TLabel', background='white')
         self.ddcip_l = ttk.Label(self.ip_frame,
-                                 text='DDC IP:PORT               ')
+                                 text='STM IP:PORT               ')
 
         self.pcip_m = ttk.Combobox(self.ip_frame,
                                    value=self.host_ips,
